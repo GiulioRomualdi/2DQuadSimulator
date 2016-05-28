@@ -17,5 +17,5 @@ $(MAIN): $(MAIN).o
 	$(CC) $(CFLAGS) -o $(MAIN) $(MAIN).o
 $(MAIN).o: $(MAIN).c
 	$(CC) -c $(MAIN).c
-simulation.o: simulator.c
+simulator.o: simulator.c
 	$(CC) -c simulator.c
