@@ -26,7 +26,7 @@
 //	GLOABAL VARIABLES
 //------------------------------------------------------------------------------
 
-// Discrete LQR gain matrix
+// Discrete Linear Quadratic (LQ) gain matrix
 const float K_LQ[2 * 6] = {-1.8699, -2.7189, -143.7249, -143.9467, 10.2058, 1.8852,\
 						   1.8699, 2.7189, -143.7249, -143.9467, -10.2058, -1.8852};
 
@@ -346,12 +346,13 @@ void	dynamics(int i, float T, float fl, float fr, float wind_x, float wind_y)
 //	Function zeros
 //	set to zero all the elements of the given matrix
 //------------------------------------------------------------------------------
-void	zeros(float matrix[], int n, int m)
+void	zeros(int n, int m, float matrix[][m])
 {
-int		i;
+int		i, j;
 
-		for (i = 0; i < n * m; i++)
-			matrix[i] = 0;
+		for (i = 0; i < n; i++)
+			for (j = 0; j < m; j++)
+				matrix[i][j] = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -362,7 +363,7 @@ void 	init_A(int i, float T)
 {
 int		j;
 
-		zeros(&(kalman_states[i].A), 6, 6);
+		zeros(6, 6, kalman_states[i].A);
 
 		for (j = 0; j < 6; j++)
 			kalman_states[i].A[j][j] = 1;
@@ -390,7 +391,7 @@ void 	update_A(int i, float T, float a_priori_theta, float fl, float fr)
 //------------------------------------------------------------------------------
 void 	init_W(int i, float T)
 {
-		zeros(&(kalman_states[i].W), 6, 3);
+		zeros(6, 3, kalman_states[i].W);
 
 		kalman_states[i].W[1][0] = T / M;
 		kalman_states[i].W[3][1] = T / M;
@@ -403,7 +404,8 @@ void 	init_W(int i, float T)
 //------------------------------------------------------------------------------
 void 	init_C(int i)
 {
-		zeros(&(kalman_states[i].C), 3, 6);
+int 	j;
+		zeros(3, 6, kalman_states[i].C);
 
 		for (j = 0; j < 3; j++)
 			kalman_states[i].C[j][2*j] = 1;
@@ -415,10 +417,10 @@ void 	init_C(int i)
 //	given the variances of the state
 //------------------------------------------------------------------------------
 void 	init_P0(int i, float sigma_x, float sigma_vx,\
-				float simga_y, float simga_vy,\
+				float sigma_y, float sigma_vy,\
 				float sigma_theta, float sigma_vtheta)
 {
-		zeros(&(kalman_states[i].P0), 6, 6);
+		zeros(6, 6, kalman_states[i].P0);
 
 		kalman_states[i].P0[0][0] = sigma_x;
 		kalman_states[i].P0[1][1] = sigma_vx;
@@ -434,7 +436,7 @@ void 	init_P0(int i, float sigma_x, float sigma_vx,\
 //------------------------------------------------------------------------------
 void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 {
-		zeros(&(kalman_states[i].Q), 2, 2);
+		zeros(2, 2, kalman_states[i].Q);
 
 		kalman_states[i].Q[0][0] = sigma_wind_x;
 		kalman_states[i].Q[1][1] = sigma_wind_y;
@@ -446,7 +448,7 @@ void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 //------------------------------------------------------------------------------
 void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 {
-		zeros(&(kalman_states[i].R), 3, 3);
+		zeros(3, 3, kalman_states[i].R);
 
 		kalman_states[i].R[0][0] = sigma_x;
 		kalman_states[i].R[1][1] = sigma_y;

@@ -34,4 +34,5 @@ struct	kalman_state {
 //------------------------------------------------------------------------------
 extern struct state quads[MAX_QUADROTORS];
 extern struct kalman_state kalman_states[MAX_QUADROTORS];
+
 #endif
