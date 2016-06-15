@@ -3,6 +3,11 @@
 #---------------------------------------------------
 MAIN = quadrotors
 #---------------------------------------------------
+# Source files
+#---------------------------------------------------
+SOURCES = $(wildcard *.c)
+OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
+#---------------------------------------------------
 # CC will be the compiler to use
 #---------------------------------------------------
 CC = gcc
@@ -10,12 +15,11 @@ CC = gcc
 # CFLAGS will be the options passed to the compiler
 #---------------------------------------------------
 CFLAGS = -Wall
-#---------------------------------------------------
+FLAGS = -lm
+#--------------------------è-------------------------
 # Dependencies
 #---------------------------------------------------
-$(MAIN): $(MAIN).o
-	$(CC) $(CFLAGS) -o $(MAIN) $(MAIN).o
-$(MAIN).o: $(MAIN).c
-	$(CC) -c $(MAIN).c
-simulator.o: simulator.c
-	$(CC) -c simulator.c
+$(MAIN): $(OBJECTS)
+	$(CC) $(FLAGS) -o $(MAIN) $^
+clean:
+	rm *.o
