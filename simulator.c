@@ -12,7 +12,6 @@
 #define L				0.15				// quadcopter length in m
 #define IZ				(M * L * L / 12)	// moment of inertia around axis x
 #define G				9.81				// gravitational acceleration in m/s^2
-
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION CONSTANTS
 //------------------------------------------------------------------------------
@@ -23,12 +22,21 @@
 #define TRAJ_5			-126				// 5-th coeff. of trajectory polynomial
 
 //------------------------------------------------------------------------------
-//	GLOABAL VARIABLES
+//	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
-
 // Discrete Linear Quadratic (LQ) gain matrix
 const float K_LQ[2 * 6] = {-1.8699, -2.7189, -143.7249, -143.9467, 10.2058, 1.8852,\
 						   1.8699, 2.7189, -143.7249, -143.9467, -10.2058, -1.8852};
+
+//------------------------------------------------------------------------------
+//	GLOABAL DATA STRUCTURES DEFINITIONS
+//------------------------------------------------------------------------------
+struct state states[MAX_QUADROTORS];
+struct kalman_state kalman_states[MAX_QUADROTORS];
+
+//------------------------------------------------------------------------------
+//	TRAJECTORY GENERATION
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	Function trajectory
@@ -328,23 +336,32 @@ float	f;
 }
 
 //------------------------------------------------------------------------------
+// 	System dynamics
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 //	Function dynamics
 //	evaluates the discrete time dynamics of the i-th 2D quadrotor
 //	given the index of quadrotor and the sampling time T
 //------------------------------------------------------------------------------
 void	dynamics(int i, float T, float fl, float fr, float wind_x, float wind_y)
 {
-		quads[i].x		+= quads[i].vx * T;
-		quads[i].vx 	+= (- sin(quads[i].theta) * (fl + fr) + wind_x) * T / M;
-		quads[i].y 		+= quads[i].vy * T;
-		quads[i].vy		+= (- M * G +  cos(quads[i].theta) * (fl + fr) + wind_y) * T / M;
-		quads[i].theta 	+= quads[i].vtheta * T;
-		quads[i].vtheta += L / IZ * (fr - fl) * T;
+		states[i].x			+= states[i].vx * T;
+		states[i].vx 		+= (- sin(states[i].theta) * (fl + fr) + wind_x) * T / M;
+		states[i].y			+= states[i].vy * T;
+		states[i].vy		+= (- M * G +  cos(states[i].theta) * (fl + fr) + wind_y) * T / M;
+		states[i].theta		+= states[i].vtheta * T;
+		states[i].vtheta	+= L / IZ * (fr - fl) * T;
 }
+
+//------------------------------------------------------------------------------
+//	Extended Kalman Filter
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	Function zeros
 //	set to zero all the elements of the given matrix
+//	MOVE ME OUT OF HERE!
 //------------------------------------------------------------------------------
 void	zeros(int n, int m, float matrix[][m])
 {
