@@ -1,5 +1,5 @@
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef UTILS_H
+#define UTILS_H
 
 void	matrix_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m]);
 void	matrix_mul(int op1_n, int op1_m, float op1[][op1_m],\
