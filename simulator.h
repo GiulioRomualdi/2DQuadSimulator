@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
-#define MAX_QUADROTORS	5			// max number of quadrotor
+#define MAX_QUADROTORS	5					// max number of quadrotor
 
 //------------------------------------------------------------------------------
 //	DATA STRUCTURES DECLARATIONS
@@ -30,9 +30,9 @@ struct	kalman_state {
 };
 
 //------------------------------------------------------------------------------
-//	GLOABAL DATA STRUCTURES
+//	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------
-extern struct state quads[MAX_QUADROTORS];
+extern struct state states[MAX_QUADROTORS];
 extern struct kalman_state kalman_states[MAX_QUADROTORS];
 
 #endif
