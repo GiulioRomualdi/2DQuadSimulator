@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 //	Matrix handling function
 //------------------------------------------------------------------------------
+void	matrix_zero(int n, int m, float matrix[][m]);
 void	matrix_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m]);
 void 	matrix_sub(int n, int m, float op1[][m], float op2[][m], float dst[][m]);
 void	matrix_mul(int op1_n, int op1_m, float op1[][op1_m],\
