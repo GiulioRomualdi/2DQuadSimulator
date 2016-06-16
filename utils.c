@@ -31,17 +31,39 @@ int		i, j;
 }
 
 //------------------------------------------------------------------------------
+//	Function matrix_sum_scalar
+//	evaluates the sum of matrices 'op1' + alpha * 'op2'
+//	and put the result in 'dst'
+//------------------------------------------------------------------------------
+static
+void	matrix_sum_scalar(int n, int m, float op1[][m], float op2[][m],\
+						  float dst[][m], float alpha)
+{
+int 	i, j;
+
+		for (i = 0; i < n; i++)
+			for (j = 0; j < m; j++)
+				dst[i][j] = op1[i][j] + alpha * op2[i][j];
+}
+
+//------------------------------------------------------------------------------
 //	Function matrix sum
 //	evaluates the sum of two matrices 'op1' and 'op2'
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
 void	matrix_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 {
-int 	i, j;
+		matrix_sum_scalar(n, m, op1, op2, dst, 1);	
+}
 
-		for (i = 0; i < n; i++)
-			for (j = 0; j < m; j++)
-				dst[i][j] = op1[i][j] + op2[i][j];
+//------------------------------------------------------------------------------
+//	Function matrix sub
+//	evaluates the difference of two matrices 'op1' and 'op2'
+//	and put the result in 'dst'
+//------------------------------------------------------------------------------
+void	matrix_sub(int n, int m, float op1[][m], float op2[][m], float dst[][m])
+{
+		matrix_sum_scalar(n, m, op1, op2, dst, -1);	
 }
 
 //------------------------------------------------------------------------------
