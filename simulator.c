@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include "simulator.h"
+#include "utils.h"
 
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
@@ -341,36 +342,34 @@ float	f;
 
 //------------------------------------------------------------------------------
 //	Function dynamics
-//	evaluates the discrete time dynamics of the i-th 2D quadrotor
-//	given the index of quadrotor and the sampling time T
+//	evaluates the discrete time dynamics of the 2D quadrotor
+//	given the inputs 'fl' and 'fr', the disturbaces due to wind,
+//	the sampling time 'T' and the previous state 'src'
+//	puts the result in 'dest'
 //------------------------------------------------------------------------------
-void	dynamics(int i, float T, float fl, float fr, float wind_x, float wind_y)
+void	dynamics(float T, float fl, float fr, float wind_x, float wind_y,\
+				 state src, state* dest)
 {
-		states[i].x			+= states[i].vx * T;
-		states[i].vx 		+= (- sin(states[i].theta) * (fl + fr) + wind_x) * T / M;
-		states[i].y			+= states[i].vy * T;
-		states[i].vy		+= (- M * G +  cos(states[i].theta) * (fl + fr) + wind_y) * T / M;
-		states[i].theta		+= states[i].vtheta * T;
-		states[i].vtheta	+= L / IZ * (fr - fl) * T;
+ 		dest->x			+= src.vx * T;
+		dest->vx 		+= (- sin(src.theta) * (fl + fr) + wind_x) * T / M;
+		dest->y			+= src.vy * T;
+		dest->vy		+= (- M * G +  cos(src.theta) * (fl + fr) + wind_y) * T / M;
+		dest->theta		+= src.vtheta * T;
+		dest->vtheta	+= L / IZ * (fr - fl) * T;
+}
+//------------------------------------------------------------------------------
+//	Function update_global_dynamics
+//	update the dynamics of the i-th 2D quadrotor
+//------------------------------------------------------------------------------
+void	update_global_dynamics(int i, float T, float fl, float fr, float wind_x,\
+							   float wind_y)
+{
+		dynamics(T, fl, fr,  wind_x, wind_y, states[i], &states[i]);
 }
 
 //------------------------------------------------------------------------------
 //	Extended Kalman Filter
 //------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-//	Function zeros
-//	set to zero all the elements of the given matrix
-//	MOVE ME OUT OF HERE!
-//------------------------------------------------------------------------------
-void	zeros(int n, int m, float matrix[][m])
-{
-int		i, j;
-
-		for (i = 0; i < n; i++)
-			for (j = 0; j < m; j++)
-				matrix[i][j] = 0;
-}
 
 //------------------------------------------------------------------------------
 //	Function init_A
@@ -380,7 +379,7 @@ void 	init_A(int i, float T)
 {
 int		j;
 
-		zeros(6, 6, kalman_states[i].A);
+		matrix_zero(6, 6, kalman_states[i].A);
 
 		for (j = 0; j < 6; j++)
 			kalman_states[i].A[j][j] = 1;
@@ -408,7 +407,7 @@ void 	update_A(int i, float T, float a_priori_theta, float fl, float fr)
 //------------------------------------------------------------------------------
 void 	init_W(int i, float T)
 {
-		zeros(6, 3, kalman_states[i].W);
+		matrix_zero(6, 3, kalman_states[i].W);
 
 		kalman_states[i].W[1][0] = T / M;
 		kalman_states[i].W[3][1] = T / M;
@@ -422,29 +421,29 @@ void 	init_W(int i, float T)
 void 	init_C(int i)
 {
 int 	j;
-		zeros(3, 6, kalman_states[i].C);
+		matrix_zero(3, 6, kalman_states[i].C);
 
 		for (j = 0; j < 3; j++)
 			kalman_states[i].C[j][2*j] = 1;
 }
 
 //------------------------------------------------------------------------------
-//	Function init_P0
-//	initializes the i-th initial state covariance matrix
+//	Function init_P
+//	initializes the i-th error state covariance matrix
 //	given the variances of the state
 //------------------------------------------------------------------------------
-void 	init_P0(int i, float sigma_x, float sigma_vx,\
+void 	init_P(int i, float sigma_x, float sigma_vx,\
 				float sigma_y, float sigma_vy,\
 				float sigma_theta, float sigma_vtheta)
 {
-		zeros(6, 6, kalman_states[i].P0);
+		matrix_zero(6, 6, kalman_states[i].P);
 
-		kalman_states[i].P0[0][0] = sigma_x;
-		kalman_states[i].P0[1][1] = sigma_vx;
-		kalman_states[i].P0[2][2] = sigma_y;
-		kalman_states[i].P0[3][3] = sigma_vy;
-		kalman_states[i].P0[4][4] = sigma_theta;
-		kalman_states[i].P0[5][5] = sigma_vtheta;
+		kalman_states[i].P[0][0] = sigma_x;
+		kalman_states[i].P[1][1] = sigma_vx;
+		kalman_states[i].P[2][2] = sigma_y;
+		kalman_states[i].P[3][3] = sigma_vy;
+		kalman_states[i].P[4][4] = sigma_theta;
+		kalman_states[i].P[5][5] = sigma_vtheta;
 }
 
 //------------------------------------------------------------------------------
@@ -453,7 +452,7 @@ void 	init_P0(int i, float sigma_x, float sigma_vx,\
 //------------------------------------------------------------------------------
 void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 {
-		zeros(2, 2, kalman_states[i].Q);
+		matrix_zero(2, 2, kalman_states[i].Q);
 
 		kalman_states[i].Q[0][0] = sigma_wind_x;
 		kalman_states[i].Q[1][1] = sigma_wind_y;
@@ -465,9 +464,106 @@ void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 //------------------------------------------------------------------------------
 void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 {
-		zeros(3, 3, kalman_states[i].R);
+		matrix_zero(3, 3, kalman_states[i].R);
 
 		kalman_states[i].R[0][0] = sigma_x;
 		kalman_states[i].R[1][1] = sigma_y;
 		kalman_states[i].R[2][2] = sigma_theta;
+}
+
+//------------------------------------------------------------------------------
+//	Function init_state_estimate
+//	initializes the i-th state estimate
+//------------------------------------------------------------------------------
+void 	init_state_estimate(int i, float x, float vx, float y,\
+							float vy, float theta, float vtheta)
+{
+		kalman_states[i].estimate.x = x;
+		kalman_states[i].estimate.vx = vx;
+		kalman_states[i].estimate.y = y;
+		kalman_states[i].estimate.vy = vy;
+		kalman_states[i].estimate.theta = theta;
+		kalman_states[i].estimate.vtheta = vtheta;
+}
+
+//------------------------------------------------------------------------------
+//	Function ekf
+//	Extended Kalman Filter
+//------------------------------------------------------------------------------
+void	ekf(int i, float T, float fl, float fr, float x_m, float y_m, float theta_m)
+{
+state	state_priori;
+float 	P1[6][6], P2[6][6], P2_part[6][2], A_t[6][6], W_t[2][6];
+float	K1[6][3], K2[3][3], K2_part[3][6], C_t[6][3];
+float	innovation[3][1], weigthed_innovation[6][1];
+float	wind_x, wind_y;
+
+	//---------------------------------------------------------------------
+	// A PRIORI STAGE
+	//---------------------------------------------------------------------
+	//
+		// propagate dynamics using mean input disturbances
+		wind_x = 0;
+ 		wind_y = 0;
+		dynamics(T, fl, fr, wind_x, wind_y, kalman_states[i].estimate, &state_priori);
+
+		// update state Jacobian A
+		update_A(i, T, state_priori.theta, fl, fr);
+
+		// prediction of error state covariance P
+		// P_priori = P1 + P2 = (A * P * A') + ( W * Q * W')
+		// P1
+		matrix_transpose(6, 6, kalman_states[i].A, A_t);
+		matrix_mul(6, 6, kalman_states[i].A, 6, 6, kalman_states[i].P, P1);
+		matrix_mul(6, 6, P1, 6, 6, A_t, P1);
+		// P2
+		matrix_transpose(6, 2, kalman_states[i].W, W_t);
+		matrix_mul(6, 2, kalman_states[i].W, 2, 2, kalman_states[i].Q, P2_part);
+		matrix_mul(6, 2, P2_part, 2, 6, W_t, P2);
+		// P_priori stored in P1
+		matrix_sum(6, 6, P1, P2, P1);
+
+	//
+	//---------------------------------------------------------------------
+
+	//---------------------------------------------------------------------
+	// A POSTERIORI STAGE
+	//---------------------------------------------------------------------
+	//
+		// evaluate Kalman gain K
+		// K = K1 * inverse(K2) = (P_new * C') * inverse(C * P * C' + R);
+		// K1
+		matrix_transpose(3, 6, kalman_states[i].C, C_t);
+		matrix_mul(6, 6, P1, 6, 3, C_t, K1);
+		// K2
+		matrix_mul(3, 6, kalman_states[i].C, 6, 6, P1, K2_part);
+		matrix_mul(3, 6, K2_part, 6, 3, C_t, K2);
+	   	matrix_sum(3, 3, K2, kalman_states[i].R, K2);
+		// inverse(K2) stored in K2
+		matrix_3_inv(K2, K2);
+		// K stored in K1
+		matrix_mul(6, 3, K1, 3, 3, K2, K1);
+
+		// evaluate weighted innovation K * (measures - C * state_priori)
+		innovation[0][0] = x_m - state_priori.x;
+		innovation[1][0] = y_m - state_priori.y;
+		innovation[2][0] = theta_m - state_priori.theta;
+		matrix_mul(6, 3, K1, 3, 1, innovation, weigthed_innovation);
+
+		// update global state estimate with state_priori + weighted_innovation
+		kalman_states[i].estimate.x = state_priori.x + weigthed_innovation[0][0];
+		kalman_states[i].estimate.vx = state_priori.vx + weigthed_innovation[1][0];
+		kalman_states[i].estimate.y = state_priori.y + weigthed_innovation[2][0];
+		kalman_states[i].estimate.vy = state_priori.vy + weigthed_innovation[3][0];
+		kalman_states[i].estimate.theta = state_priori.theta + weigthed_innovation[4][0];
+		kalman_states[i].estimate.vtheta = state_priori.vtheta + weigthed_innovation[5][0];
+
+		// update global error state covariance P
+		// P_posteriori = P_priori - (K * C * P_priori)
+		matrix_mul(6, 3, K1, 3, 6, kalman_states[i].C, P2);
+		matrix_mul(6, 6, P2, 6, 6, P1, P2);
+		matrix_sub(6, 6, P1, P2, kalman_states[i].P);
+
+	//
+	//---------------------------------------------------------------------
 }
