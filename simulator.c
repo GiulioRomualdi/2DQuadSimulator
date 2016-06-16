@@ -3,6 +3,7 @@
 //------------------------------------------------------------------------------
 
 #include <math.h>
+#include <stdio.h>
 #include "simulator.h"
 #include "utils.h"
 
@@ -337,7 +338,7 @@ float	f;
 }
 
 //------------------------------------------------------------------------------
-// 	System dynamics
+// 	SYSTEM DYNAMICS
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -350,12 +351,12 @@ float	f;
 void	dynamics(float T, float fl, float fr, float wind_x, float wind_y,\
 				 state src, state* dest)
 {
- 		dest->x			+= src.vx * T;
-		dest->vx 		+= (- sin(src.theta) * (fl + fr) + wind_x) * T / M;
-		dest->y			+= src.vy * T;
-		dest->vy		+= (- M * G +  cos(src.theta) * (fl + fr) + wind_y) * T / M;
-		dest->theta		+= src.vtheta * T;
-		dest->vtheta	+= L / IZ * (fr - fl) * T;
+ 		dest->x			= src.x + src.vx * T;
+		dest->vx 		= src.vx + (- sin(src.theta) * (fl + fr) + wind_x) * T / M;
+		dest->y			= src.y + src.vy * T;
+		dest->vy		= src.vy + (- M * G +  cos(src.theta) * (fl + fr) + wind_y) * T / M;
+		dest->theta		= src.theta + src.vtheta * T;
+		dest->vtheta	= src.vtheta + L / IZ * (fr - fl) * T;
 }
 //------------------------------------------------------------------------------
 //	Function update_global_dynamics
@@ -368,7 +369,7 @@ void	update_global_dynamics(int i, float T, float fl, float fr, float wind_x,\
 }
 
 //------------------------------------------------------------------------------
-//	Extended Kalman Filter
+//	EXTENDED KALMAN FILTER
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
