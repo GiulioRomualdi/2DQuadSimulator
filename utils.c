@@ -1,5 +1,20 @@
+//------------------------------------------------------------------------------
+//	UTILS.C:	DESCRIPTION
+//------------------------------------------------------------------------------
+
+#include <time.h>
+#include <stdlib.h>
+#include <math.h>
 #include "utils.h"
-#include <stdio.h>
+
+//------------------------------------------------------------------------------
+//	CONSTANTS
+//------------------------------------------------------------------------------
+#define NSUM 1000	//number of RV used in gaussian random generator
+
+//------------------------------------------------------------------------------
+//	Matrix handling function
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	Function matrix_copy
@@ -127,3 +142,54 @@ float	determinant;
 			for (j = 0; j < 3; j++)
 				dst[i][j] /= determinant;
 }
+
+//------------------------------------------------------------------------------
+//	Random numbers generation
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function init_random_generator
+//	initializes random number generator using srand()
+//------------------------------------------------------------------------------
+void	init_random_generator()
+{
+		srand(time(NULL));
+}
+
+//------------------------------------------------------------------------------
+//	Function get_uniform
+//	returns a sample taken from a uniform distribution U(-T/2, T/2)
+//	T = std / sqrt(12) where 'std' is the standard deviation
+//------------------------------------------------------------------------------
+static
+float	get_uniform(float std)
+{
+float	T, sample;
+
+		// The length of the interval is std * sqrt(12)
+		T = std * sqrt(12);
+		// Forces the sample to be in the range [-T/2, T/2]
+		sample = fmod(rand(), T) - T/2;
+
+		return sample;
+}
+
+//------------------------------------------------------------------------------
+//	Function get_gaussian
+//	returns a sample taken from a zero mean gauassian distribution N(0, std^2)
+//	(uses the Central Limit Theorem)
+//------------------------------------------------------------------------------
+float	get_gaussian(float std)
+{
+int		i;
+float	sample;
+
+		sample = 0;
+		// Evaluates the sample using the Central Limit Theorem
+		for (i = 0; i < NSUM; i++)
+			sample += get_uniform(std);
+		sample /= sqrt(NSUM);
+
+		return sample;
+}
+
