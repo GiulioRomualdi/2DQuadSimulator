@@ -202,6 +202,10 @@ float	get_uniform(float std)
 {
 float	T, sample;
 
+		// if the standard deviation is 0 the interval length shrinks to 0
+		if (std == 0)
+			return 0;
+
 		// The length of the interval is std * sqrt(12)
 		T = std * sqrt(12);
 		// Forces the sample to be in the range [-T/2, T/2]
