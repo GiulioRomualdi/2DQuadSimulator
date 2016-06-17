@@ -27,8 +27,8 @@
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
 // Discrete Linear Quadratic (LQ) gain matrix
-const float K_LQ[2 * 6] = {-1.8699, -2.7189, -143.7249, -143.9467, 10.2058, 1.8852,\
-						   1.8699, 2.7189, -143.7249, -143.9467, -10.2058, -1.8852};
+float K_LQ[2][6] = {{-1.8699, -2.7189, -143.7249, -143.9467, 10.2058, 1.8852},\
+					{1.8699, 2.7189, -143.7249, -143.9467, -10.2058, -1.8852}};
 
 //------------------------------------------------------------------------------
 //	GLOABAL DATA STRUCTURES DEFINITIONS
@@ -338,7 +338,7 @@ float	f;
 }
 
 //------------------------------------------------------------------------------
-// 	SYSTEM DYNAMICS
+// 	SYSTEM DYNAMICS AND NOISE
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -358,14 +358,62 @@ void	dynamics(float T, float fl, float fr, float wind_x, float wind_y,\
 		dest->theta		= src.theta + src.vtheta * T;
 		dest->vtheta	= src.vtheta + L / IZ * (fr - fl) * T;
 }
+
 //------------------------------------------------------------------------------
-//	Function update_global_dynamics
-//	update the dynamics of the i-th 2D quadrotor
+//	Function system_io
+//	evaluates the input/output behavior of the system taking into account
+//	noisy disturbances and mesasure
+//	puts the evaluated state in 'state' and the evaluated measures in 'mesasure'
 //------------------------------------------------------------------------------
-void	update_global_dynamics(int i, float T, float fl, float fr, float wind_x,\
-							   float wind_y)
+void	system_io(int i, float T, float fl, float fr, state* state, float measure[3])
 {
-		dynamics(T, fl, fr,  wind_x, wind_y, states[i], &states[i]);
+float	wind_x, wind_y, sigma_wind_x, sigma_wind_y;
+float	x_m, y_m, theta_m, sigma_x_m, sigma_y_m, sigma_theta_m;
+
+		// Generate wind forces according to the process noise covariance matrix Q
+		sigma_wind_x = kalman_states[i].Q[0][0];
+		sigma_wind_y = kalman_states[i].Q[1][1];
+		wind_x = get_gaussian(sigma_wind_x);
+		wind_y = get_gaussian(sigma_wind_y);
+
+		// Evaluate the dynamics
+		dynamics(T, fl, fr, wind_x, wind_y, *state, state);
+
+		// Add noise to measure according to measure noise covariance matrix R
+		sigma_x_m = kalman_states[i].R[0][0];
+		sigma_y_m = kalman_states[i].R[1][1];
+		sigma_theta_m = kalman_states[i].R[2][2];
+		x_m = state->x + get_gaussian(sigma_x_m);
+		y_m = state->y + get_gaussian(sigma_y_m);
+		theta_m = state->theta + get_gaussian(sigma_theta_m);
+		measure[0] = x_m;
+		measure[1] = y_m;
+		measure[2] = theta_m;
+}
+
+//------------------------------------------------------------------------------
+//	FEEDBACK CONTROL
+//------------------------------------------------------------------------------
+void	feedback_control(state current_state, state desired_trajectory,\
+						 float nominal_fl, float nominal_fr, float output[2])
+{
+float	error[6][1];
+float	du[2][1];
+
+		// Evaluate the trajectory error
+		error[0][0] = current_state.x - desired_trajectory.x;
+		error[1][0] = current_state.vx - desired_trajectory.vx;
+		error[2][0] = current_state.y - desired_trajectory.y;
+		error[3][0] = current_state.vy - desired_trajectory.vy;
+		error[4][0] = current_state.theta - desired_trajectory.theta;
+		error[5][0] = current_state.vtheta - desired_trajectory.vtheta;
+
+		// Evaluate the the control output wrt the nominal control
+		// du = K_LQ * error
+		matrix_mul(2, 6, K_LQ, 6, 1, error, du);
+		// Add the nominal control
+		output[0] = du[0][0] + nominal_fl;
+		output[1] = du[1][0] + nominal_fr;
 }
 
 //------------------------------------------------------------------------------
@@ -491,7 +539,8 @@ void 	init_state_estimate(int i, float x, float vx, float y,\
 //	Function ekf
 //	Extended Kalman Filter
 //------------------------------------------------------------------------------
-void	ekf(int i, float T, float fl, float fr, float x_m, float y_m, float theta_m)
+void	ekf(int i, float T, float fl, float fr, float x_m, float y_m, float theta_m,
+			state* estimate)
 {
 state	state_priori;
 float 	P1[6][6], P2[6][6], P2_part[6][2], A_t[6][6], W_t[2][6];
@@ -551,13 +600,13 @@ float	wind_x, wind_y;
 		innovation[2][0] = theta_m - state_priori.theta;
 		matrix_mul(6, 3, K1, 3, 1, innovation, weigthed_innovation);
 
-		// update global state estimate with state_priori + weighted_innovation
-		kalman_states[i].estimate.x = state_priori.x + weigthed_innovation[0][0];
-		kalman_states[i].estimate.vx = state_priori.vx + weigthed_innovation[1][0];
-		kalman_states[i].estimate.y = state_priori.y + weigthed_innovation[2][0];
-		kalman_states[i].estimate.vy = state_priori.vy + weigthed_innovation[3][0];
-		kalman_states[i].estimate.theta = state_priori.theta + weigthed_innovation[4][0];
-		kalman_states[i].estimate.vtheta = state_priori.vtheta + weigthed_innovation[5][0];
+		// evaluate estimate as state_priori + weighted_innovation
+		estimate->x = state_priori.x + weigthed_innovation[0][0];
+		estimate->vx = state_priori.vx + weigthed_innovation[1][0];
+		estimate->y = state_priori.y + weigthed_innovation[2][0];
+		estimate->vy = state_priori.vy + weigthed_innovation[3][0];
+		estimate->theta = state_priori.theta + weigthed_innovation[4][0];
+		estimate->vtheta = state_priori.vtheta + weigthed_innovation[5][0];
 
 		// update global error state covariance P
 		// P_posteriori = P_priori - (K * C * P_priori)
@@ -568,3 +617,114 @@ float	wind_x, wind_y;
 	//
 	//---------------------------------------------------------------------
 }
+
+//------------------------------------------------------------------------------
+//	SIMULATION
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function init_state
+//------------------------------------------------------------------------------
+void 	init_state(int i, float x, float vx, float y,\
+				   float vy, float theta, float vtheta)
+{
+		states[i].x = x;
+		states[i].vx = vx;
+		states[i].y = y;
+		states[i].vy = vy;
+		states[i].theta = theta;
+		states[i].vtheta = vtheta;
+}
+
+//------------------------------------------------------------------------------
+//	Function simulate
+//------------------------------------------------------------------------------
+void 	print_header()
+{
+	printf("x,vx,y,vy,theta,vtheta,xe,vxe,ye,vye,thetae,vthetae\n");
+}
+void 	state_print(const state* s, const state* s1)
+{
+	printf("%f,", s->x);
+	printf("%f,", s->vx);
+	printf("%f,", s->y);
+	printf("%f,", s->vy);
+	printf("%f,", s->theta);
+	printf("%f,", s->vtheta);
+	printf("%f,", s1->x);
+	printf("%f,", s1->vx);
+	printf("%f,", s1->y);
+	printf("%f,", s1->vy);
+	printf("%f,", s1->theta);
+	printf("%f", s1->vtheta);
+	printf("\n");
+}
+
+void 	simulate()
+{
+int		i, k;
+float	x_0, y_0, x_f, y_f;
+float	nominal_fl, nominal_fr, output[2];
+float	measure[3];
+float	tf;
+float	T;
+state	desired_trajectory;
+
+		init_random_generator();	
+
+		// Input
+		i = 0;
+		k = 0;
+		x_0 = 1;
+		y_0 = 2;
+		x_f = 6;
+		y_f = 2;
+		tf = 3;
+		T = 0.001;
+
+		// Init
+		init_state(i, x_0, 0, y_0, 0, 0, 0);
+		init_state_estimate(i, x_0 +1, 0, y_0 -1, 0, 0, 0);
+		init_A(i, T);
+		init_W(i, T);
+		init_C(i);
+		init_P(i, 1.0 / 3, 1.0 / 3, 1.0 / 3,\
+				  1.0 / 3, 0.6 / 3, 0);
+		init_Q(i, 0.02, 0.02);
+		init_R(i, 1.0 /3, 1.0 / 3, 0.6 / 3);
+
+		print_header();
+
+		while (k * T <= tf)
+		{
+			// Loop
+			// Desired trajectory
+			desired_trajectory.x = trajectory(k * T, tf, x_0, x_f);
+			desired_trajectory.vx = trajectory_velocity(k * T, tf, x_0, x_f);
+			desired_trajectory.y = trajectory(k * T, tf, y_0, y_f);
+			desired_trajectory.vy = trajectory_velocity(k * T, tf, y_0, y_f);
+			desired_trajectory.theta = pitch(k * T, tf, x_0, y_0, x_f, y_f);
+			desired_trajectory.vtheta = pitch_rate(k * T, tf, x_0, y_0, x_f, y_f);
+
+			// Current state
+			// kalman_states[i].estimate
+
+			// Nominal input
+			nominal_fl = force_left(k * T, tf, x_0, y_0, x_f, y_f);
+			nominal_fr = force_right(k * T, tf, x_0, y_0, x_f, y_f);
+			feedback_control(kalman_states[i].estimate,desired_trajectory,\
+						 nominal_fl, nominal_fr, output);
+
+			// System I/O
+			system_io(i, T, output[0], output[1], &states[i], measure);
+
+			// EKF
+			ekf(i, T, output[0], output[1], measure[0], measure[1], measure[2],
+				&kalman_states[i].estimate);
+
+			state_print(&states[i], &kalman_states[i].estimate);
+
+			k++;
+	}
+}
+

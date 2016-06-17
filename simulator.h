@@ -54,6 +54,6 @@ void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta);
 void 	init_state_estimate(int i, float x, float vx, float y,\
 							float vy, float theta, float vtheta);
 void	ekf(int i, float T, float fl, float fr, float x_m,\
-			float y_m, float theta_m);
-
+			float y_m, float theta_m, state* estimate);
+void	simulate();
 #endif

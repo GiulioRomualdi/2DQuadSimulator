@@ -1,4 +1,9 @@
-int	main()
+#include <stdio.h>
+#include "utils.h"
+#include "simulator.h"
+
+int		main()
 {
-	return 0;
+		simulate();
+		return 0;
 }
