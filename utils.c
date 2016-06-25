@@ -17,11 +17,11 @@
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-//	Function zero
+//	Function mat_zero
 //	set to zero all the elements of the given matrix
 //	MOVE ME OUT OF HERE!
 //------------------------------------------------------------------------------
-void	matrix_zero(int n, int m, float matrix[][m])
+void	mat_zero(int n, int m, float matrix[][m])
 {
 int		i, j;
 
@@ -31,11 +31,11 @@ int		i, j;
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_copy
+//	Function mat_copy
 //	copies the matrix 'src' into the matrix 'dst'
 //------------------------------------------------------------------------------
 static
-void	matrix_copy(int n, int m, float src[][m], float dst[][m])
+void	mat_copy(int n, int m, float src[][m], float dst[][m])
 {
 int		i, j;
 
@@ -45,12 +45,12 @@ int		i, j;
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_sum_scalar
+//	Function mat_sum_scalar
 //	evaluates the sum of matrices 'op1' + alpha * 'op2'
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
 static
-void	matrix_sum_scalar(int n, int m, float op1[][m], float op2[][m],\
+void	mat_sum_scalar(int n, int m, float op1[][m], float op2[][m],\
 						  float dst[][m], float alpha)
 {
 int 	i, j;
@@ -61,31 +61,31 @@ int 	i, j;
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix sum
+//	Function mat sum
 //	evaluates the sum of two matrices 'op1' and 'op2'
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
-void	matrix_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m])
+void	mat_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 {
-		matrix_sum_scalar(n, m, op1, op2, dst, 1);	
+		mat_sum_scalar(n, m, op1, op2, dst, 1);
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix sub
+//	Function mat sub
 //	evaluates the difference of two matrices 'op1' and 'op2'
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
-void	matrix_sub(int n, int m, float op1[][m], float op2[][m], float dst[][m])
+void	mat_sub(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 {
-		matrix_sum_scalar(n, m, op1, op2, dst, -1);	
+		mat_sum_scalar(n, m, op1, op2, dst, -1);
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_mul
+//	Function mat_mul
 //	evaluates the product of two matrices 'op1' and 'op2'
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
-void	matrix_mul(int op1_n, int op1_m, float op1[][op1_m],\
+void	mat_mul(int op1_n, int op1_m, float op1[][op1_m],\
 					int op2_n, int op2_m, float op2[][op2_m],\
 			   		float dst[op1_n][op2_m])
 {
@@ -93,8 +93,8 @@ int		i, j, k;
 float 	a_ij;
 float	op1_copy[op1_n][op1_m], op2_copy[op2_n][op2_m];
 
-		matrix_copy(op1_n, op1_m, op1, op1_copy);
-		matrix_copy(op2_n, op2_m, op2, op2_copy);
+		mat_copy(op1_n, op1_m, op1, op1_copy);
+		mat_copy(op2_n, op2_m, op2, op2_copy);
 
 		for (i = 0; i < op1_n; i++)
 			for (j = 0; j < op2_m; j++) {
@@ -106,16 +106,16 @@ float	op1_copy[op1_n][op1_m], op2_copy[op2_n][op2_m];
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_transpose
+//	Function mat_transpose
 //	evaluates the transpose of the matrix 'src'
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
-void	matrix_transpose(int n, int m, float src[][m], float dst[][n])
+void	mat_transpose(int n, int m, float src[][m], float dst[][n])
 {
 int 	i, j;
 float	src_copy[n][m];
 
-		matrix_copy(n, m, src, src_copy);
+		mat_copy(n, m, src, src_copy);
 
 		for (i = 0; i < n; i++)
 			for (j = 0; j < m; j++)
@@ -123,11 +123,11 @@ float	src_copy[n][m];
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_3_det
+//	Function mat_3_det
 //	returns the determinant of the 3 by 3 matrix 'm' (closed form used)
 //------------------------------------------------------------------------------
 static
-float	matrix_3_det(float m[3][3])
+float	mat_3_det(float m[3][3])
 {
 float	result;
 
@@ -139,16 +139,16 @@ float	result;
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_3_adj
+//	Function mat_3_adj
 //	evaluates the adjoint of the 3 by 3 matrix 'src' (closed form used)
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
 static
-void	matrix_3_adj(float src[3][3], float dst[3][3])
+void	mat_3_adj(float src[3][3], float dst[3][3])
 {
 float	m[3][3];
 
-		matrix_copy(3, 3, src, m);
+		mat_copy(3, 3, src, m);
 
 		dst[0][0] = m[2][2] * m[1][1] - m[2][1] * m[1][2];
 		dst[0][1] = -(m[2][2] * m[0][1] - m[2][1] * m[0][2]);
@@ -162,21 +162,72 @@ float	m[3][3];
 }
 
 //------------------------------------------------------------------------------
-//	Function matrix_3_inv
+//	Function mat_3_inv
 //	evaluates the inverse of the 3 by 3 matrix 'matrix' (closed form used)
 //	and put the result in 'dst'
 //------------------------------------------------------------------------------
-void	matrix_3_inv(float matrix[3][3], float dst[3][3])
+void	mat_3_inv(float matrix[3][3], float dst[3][3])
 {
 int		i, j;
 float	determinant;
 
-		determinant = matrix_3_det(matrix);
-		matrix_3_adj(matrix, dst);
+		determinant = mat_3_det(matrix);
+		mat_3_adj(matrix, dst);
 
 		for (i = 0; i < 3; i++)
 			for (j = 0; j < 3; j++)
 				dst[i][j] /= determinant;
+}
+
+//------------------------------------------------------------------------------
+//	Function rotate
+//	builds a rotation 3x3 matrix created from an agle expressed in radians (SE(2))
+//	the axis of rotation is the z axis
+//------------------------------------------------------------------------------
+void	rotate(float matrix[3][3], float angle)
+{
+float	sine, cosine;
+
+	   	sine = sin(angle);
+	   	cosine = cos(angle);
+
+		matrix[0][0] = cosine;
+		matrix[0][1] = - sine;
+		matrix[0][2] = 0;
+		matrix[1][0] = sine;
+		matrix[1][1] = cosine;
+		matrix[1][2] = 0;
+		matrix[2][0] = 0;
+		matrix[2][1] = 0;
+		matrix[2][2] = 1;
+}
+
+//------------------------------------------------------------------------------
+//	Function translate
+//	builds a tralation 3x3 matrix created from 2 scalars (SE(2))
+//------------------------------------------------------------------------------
+void	translate(float matrix[3][3], float x, float y)
+{
+		mat_zero(3, 3, matrix);
+
+		matrix[0][0] = 1;
+		matrix[0][2] = x;
+		matrix[1][1] = 1;
+		matrix[1][2] = y;
+		matrix[2][2] = 1;
+}
+
+//------------------------------------------------------------------------------
+//	Function scale
+//	builds a scaling 3x3 matrix created from a scaling factor (SE(2))
+//------------------------------------------------------------------------------
+void	scale(float matrix[3][3], float k)
+{
+		mat_zero(3, 3, matrix);
+
+		matrix[0][0] = k;
+		matrix[1][1] = k;
+		matrix[2][2] = 1;
 }
 
 //------------------------------------------------------------------------------
@@ -232,4 +283,3 @@ float	sample;
 
 		return sample;
 }
-

@@ -410,7 +410,7 @@ float	du[2][1];
 
 		// Evaluate the the control output wrt the nominal control
 		// du = K_LQ * error
-		matrix_mul(2, 6, K_LQ, 6, 1, error, du);
+		mat_mul(2, 6, K_LQ, 6, 1, error, du);
 		// Add the nominal control
 		output[0] = du[0][0] + nominal_fl;
 		output[1] = du[1][0] + nominal_fr;
@@ -428,7 +428,7 @@ void 	init_A(int i, float T)
 {
 int		j;
 
-		matrix_zero(6, 6, kalman_states[i].A);
+		mat_zero(6, 6, kalman_states[i].A);
 
 		for (j = 0; j < 6; j++)
 			kalman_states[i].A[j][j] = 1;
@@ -456,7 +456,7 @@ void 	update_A(int i, float T, float a_priori_theta, float fl, float fr)
 //------------------------------------------------------------------------------
 void 	init_W(int i, float T)
 {
-		matrix_zero(6, 3, kalman_states[i].W);
+		mat_zero(6, 3, kalman_states[i].W);
 
 		kalman_states[i].W[1][0] = T / M;
 		kalman_states[i].W[3][1] = T / M;
@@ -470,7 +470,7 @@ void 	init_W(int i, float T)
 void 	init_C(int i)
 {
 int 	j;
-		matrix_zero(3, 6, kalman_states[i].C);
+		mat_zero(3, 6, kalman_states[i].C);
 
 		for (j = 0; j < 3; j++)
 			kalman_states[i].C[j][2*j] = 1;
@@ -485,7 +485,7 @@ void 	init_P(int i, float sigma_x, float sigma_vx,\
 				float sigma_y, float sigma_vy,\
 				float sigma_theta, float sigma_vtheta)
 {
-		matrix_zero(6, 6, kalman_states[i].P);
+		mat_zero(6, 6, kalman_states[i].P);
 
 		kalman_states[i].P[0][0] = sigma_x;
 		kalman_states[i].P[1][1] = sigma_vx;
@@ -501,7 +501,7 @@ void 	init_P(int i, float sigma_x, float sigma_vx,\
 //------------------------------------------------------------------------------
 void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 {
-		matrix_zero(2, 2, kalman_states[i].Q);
+		mat_zero(2, 2, kalman_states[i].Q);
 
 		kalman_states[i].Q[0][0] = sigma_wind_x;
 		kalman_states[i].Q[1][1] = sigma_wind_y;
@@ -513,7 +513,7 @@ void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 //------------------------------------------------------------------------------
 void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 {
-		matrix_zero(3, 3, kalman_states[i].R);
+		mat_zero(3, 3, kalman_states[i].R);
 
 		kalman_states[i].R[0][0] = sigma_x;
 		kalman_states[i].R[1][1] = sigma_y;
@@ -563,15 +563,15 @@ float	wind_x, wind_y;
 		// prediction of error state covariance P
 		// P_priori = P1 + P2 = (A * P * A') + ( W * Q * W')
 		// P1
-		matrix_transpose(6, 6, kalman_states[i].A, A_t);
-		matrix_mul(6, 6, kalman_states[i].A, 6, 6, kalman_states[i].P, P1);
-		matrix_mul(6, 6, P1, 6, 6, A_t, P1);
+		mat_transpose(6, 6, kalman_states[i].A, A_t);
+		mat_mul(6, 6, kalman_states[i].A, 6, 6, kalman_states[i].P, P1);
+		mat_mul(6, 6, P1, 6, 6, A_t, P1);
 		// P2
-		matrix_transpose(6, 2, kalman_states[i].W, W_t);
-		matrix_mul(6, 2, kalman_states[i].W, 2, 2, kalman_states[i].Q, P2_part);
-		matrix_mul(6, 2, P2_part, 2, 6, W_t, P2);
+		mat_transpose(6, 2, kalman_states[i].W, W_t);
+		mat_mul(6, 2, kalman_states[i].W, 2, 2, kalman_states[i].Q, P2_part);
+		mat_mul(6, 2, P2_part, 2, 6, W_t, P2);
 		// P_priori stored in P1
-		matrix_sum(6, 6, P1, P2, P1);
+		mat_sum(6, 6, P1, P2, P1);
 
 	//
 	//---------------------------------------------------------------------
@@ -583,22 +583,22 @@ float	wind_x, wind_y;
 		// evaluate Kalman gain K
 		// K = K1 * inverse(K2) = (P_new * C') * inverse(C * P * C' + R);
 		// K1
-		matrix_transpose(3, 6, kalman_states[i].C, C_t);
-		matrix_mul(6, 6, P1, 6, 3, C_t, K1);
+		mat_transpose(3, 6, kalman_states[i].C, C_t);
+		mat_mul(6, 6, P1, 6, 3, C_t, K1);
 		// K2
-		matrix_mul(3, 6, kalman_states[i].C, 6, 6, P1, K2_part);
-		matrix_mul(3, 6, K2_part, 6, 3, C_t, K2);
-	   	matrix_sum(3, 3, K2, kalman_states[i].R, K2);
+		mat_mul(3, 6, kalman_states[i].C, 6, 6, P1, K2_part);
+		mat_mul(3, 6, K2_part, 6, 3, C_t, K2);
+	   	mat_sum(3, 3, K2, kalman_states[i].R, K2);
 		// inverse(K2) stored in K2
-		matrix_3_inv(K2, K2);
+		mat_3_inv(K2, K2);
 		// K stored in K1
-		matrix_mul(6, 3, K1, 3, 3, K2, K1);
+		mat_mul(6, 3, K1, 3, 3, K2, K1);
 
 		// evaluate weighted innovation K * (measures - C * state_priori)
 		innovation[0][0] = x_m - state_priori.x;
 		innovation[1][0] = y_m - state_priori.y;
 		innovation[2][0] = theta_m - state_priori.theta;
-		matrix_mul(6, 3, K1, 3, 1, innovation, weigthed_innovation);
+		mat_mul(6, 3, K1, 3, 1, innovation, weigthed_innovation);
 
 		// evaluate estimate as state_priori + weighted_innovation
 		estimate->x = state_priori.x + weigthed_innovation[0][0];
@@ -610,9 +610,9 @@ float	wind_x, wind_y;
 
 		// update global error state covariance P
 		// P_posteriori = P_priori - (K * C * P_priori)
-		matrix_mul(6, 3, K1, 3, 6, kalman_states[i].C, P2);
-		matrix_mul(6, 6, P2, 6, 6, P1, P2);
-		matrix_sub(6, 6, P1, P2, kalman_states[i].P);
+		mat_mul(6, 3, K1, 3, 6, kalman_states[i].C, P2);
+		mat_mul(6, 6, P2, 6, 6, P1, P2);
+		mat_sub(6, 6, P1, P2, kalman_states[i].P);
 
 	//
 	//---------------------------------------------------------------------
