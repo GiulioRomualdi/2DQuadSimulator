@@ -5,6 +5,7 @@
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
 #define MAX_QUADROTORS	5					// max number of quadrotor
+#define L				0.38				// quadcopter length in m
 
 //------------------------------------------------------------------------------
 //	DATA STRUCTURES DECLARATIONS
