@@ -6,11 +6,18 @@
 #include <stdlib.h>
 #include <math.h>
 #include "utils.h"
+#include "simulator.h"
 
 //------------------------------------------------------------------------------
 //	CONSTANTS
 //------------------------------------------------------------------------------
 #define NSUM 1000	//number of RV used in gaussian random generator
+
+//------------------------------------------------------------------------------
+//	GLOABAL VARIABLE DEFINITIONS
+//------------------------------------------------------------------------------
+//	Mutex required for mutual exclusion
+pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	MATRIX HANDLING FUNCTION
@@ -245,11 +252,27 @@ void	init_random_generator()
 
 //------------------------------------------------------------------------------
 //	Function get_uniform
+//	returns a sample taken from a uniform distribution U(0, T) given T
+//------------------------------------------------------------------------------
+float	get_uniform(float T)
+{
+float	sample;
+
+		// Generate a uniform sample in [0, 1]
+		sample = (float)rand() / RAND_MAX;
+		// Scale the sample by T
+		sample *= T;
+
+		return sample;
+}
+
+//------------------------------------------------------------------------------
+//	Function get_uniform_from_std
 //	returns a sample taken from a uniform distribution U(-T/2, T/2)
 //	T = std / sqrt(12) where 'std' is the standard deviation
 //------------------------------------------------------------------------------
 static
-float	get_uniform(float std)
+float	get_uniform_from_std(float std)
 {
 float	T, sample;
 
@@ -260,7 +283,7 @@ float	T, sample;
 		// The length of the interval is std * sqrt(12)
 		T = std * sqrt(12);
 		// Forces the sample to be in the range [-T/2, T/2]
-		sample = fmod(rand(), T) - T/2;
+		sample = fmod(rand(), T) - T / 2;
 
 		return sample;
 }
@@ -278,8 +301,138 @@ float	sample;
 		sample = 0;
 		// Evaluates the sample using the Central Limit Theorem
 		for (i = 0; i < NSUM; i++)
-			sample += get_uniform(std);
+			sample += get_uniform_from_std(std);
 		sample /= sqrt(NSUM);
 
 		return sample;
+}
+
+//------------------------------------------------------------------------------
+//	TIME HANDLING
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function time_copy
+//	copies a source timespec 't_source' in a destination timespec pointed by 
+//	't_dest'
+//------------------------------------------------------------------------------
+void	time_copy(struct timespec t_source, struct timespec* t_dest)
+{
+		t_dest->tv_sec = t_source.tv_sec;
+		t_dest->tv_nsec = t_source.tv_nsec;
+}
+
+//------------------------------------------------------------------------------
+//	Function time_add_delta
+//	adds a value in milliseconds 'delta' to the time represented
+//	by the timespec pointed by 'time'
+//------------------------------------------------------------------------------
+void	time_add_delta(struct timespec* time, int delta)
+{
+		time->tv_sec += delta / 1000;
+		time->tv_sec += (delta % 1000) * 1000000;
+
+		if (time->tv_nsec > 1000000000) {
+			time->tv_nsec -= 1000000000;
+			time->tv_sec += 1;
+		}
+}
+
+//------------------------------------------------------------------------------
+//	Function time_cmp
+//	compares two time variables represented by two timespec 't1' and 't2'
+//	and returns 0 if they are equal, 1 if 't1' > 't2', -1 if 't1' < 't2'
+//------------------------------------------------------------------------------
+int		time_cmp(struct timespec t1, struct timespec t2)
+{
+		if(t1.tv_sec > t2.tv_sec)
+			return 1;
+		if(t1.tv_sec < t2.tv_sec)
+			return -1;
+		if(t1.tv_nsec > t2.tv_nsec)
+			return 1;
+		if(t1.tv_nsec < t2.tv_nsec)
+			return -1;
+		return 0;
+}
+
+//-----------------------------------------------------------------------------
+//	THREAD MANAGEMENT
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+//	Function mutex_init
+//	initializes all the mutex required in the application
+//-----------------------------------------------------------------------------
+void	mutex_init()
+{
+int		i;
+
+		for(i = 0; i < MAX_QUADROTORS; i++)
+			pthread_mutex_init(&guidance_mutex[i], NULL);
+}
+
+//-----------------------------------------------------------------------------
+//	Function init_timespecs
+//	read the current time and computes the next activation time
+//	and the absolute deadline of the task
+//	the timespecs 'activation_time' and 'abs_deadline' are set accordingly
+//-----------------------------------------------------------------------------
+void	init_timespecs(struct task_par* tp)
+{
+struct timespec time;
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		time_copy(time, &(tp->activation_time));
+		time_copy(time, &(tp->abs_deadline));
+		time_add_delta(&(tp->activation_time), tp->period);
+		time_add_delta(&(tp->abs_deadline), tp->deadline);
+}
+
+//-----------------------------------------------------------------------------
+//	Function update_activation_time
+//	updates the activation time
+//-----------------------------------------------------------------------------
+void	update_activation_time(struct task_par* tp)
+{
+		time_add_delta(&(tp->activation_time), tp->period);
+}
+
+//-----------------------------------------------------------------------------
+//	Function update_abs_deadline
+//	updates the absolute deadline
+//-----------------------------------------------------------------------------
+void	update_abs_deadline(struct task_par* tp)
+{
+		time_add_delta(&(tp->abs_deadline), tp->period);
+}
+
+//-----------------------------------------------------------------------------
+//	Function wait_for_period
+//	suspends the thread until the next activation
+//-----------------------------------------------------------------------------
+void	wait_for_period(struct task_par* tp)
+{
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &(tp->activation_time),\
+						NULL);
+}
+
+//-----------------------------------------------------------------------------
+//	Function deadline_miss
+//	compare the current execution time with the expected absolute deadline
+//	returns 1 in case of deadline miss and increments 'dmiss'
+//	otherwise it returns 0
+//-----------------------------------------------------------------------------
+int		deadline_miss(struct task_par* tp)
+{
+struct timespec current_time;
+
+		clock_gettime(CLOCK_MONOTONIC, &current_time);
+
+		if(time_cmp(current_time, tp->abs_deadline) > 0) {
+			tp->dmiss++;
+			return 1;
+		}
+
+		return 0;
 }

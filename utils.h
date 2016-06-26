@@ -1,6 +1,29 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <time.h>
+#include <pthread.h>
+#include "simulator.h"
+
+//------------------------------------------------------------------------------
+//	DATA STRUCTURES DECLARATIONS
+//------------------------------------------------------------------------------
+struct	task_par {								// task parameters
+		int					id;					// task id
+		long				wcet;				// in microseconds
+		int					period;				// in milliseconds
+		int					deadline;			// relative in milliseconds
+		int					priority;			// in [0, 99]
+		int 				dmiss;				// no. of misses
+		struct	timespec 	activation_time;	// next activation time
+		struct	timespec	abs_deadline;		// absolute
+};
+
+//------------------------------------------------------------------------------
+//	GLOBAL VARIABLE EXTERN DECLARATIONS
+//------------------------------------------------------------------------------
+extern pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
+
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
 //------------------------------------------------------------------------------
@@ -24,6 +47,25 @@ void	scale(float matrix[3][3], float k);
 //	RANDOM NUMBERS GENERATION
 //------------------------------------------------------------------------------
 void	init_random_generator();
+float	get_uniform(float T);
 float	get_gaussian(float std);
+
+//------------------------------------------------------------------------------
+//	TIMESPEC HANDLING
+//------------------------------------------------------------------------------
+void	time_copy(struct timespec t_source, struct timespec* t_dest);
+void	time_add_delta(struct timespec* time, int delta);
+int		time_cmp(struct timespec t1, struct timespec t2);
+
+//-----------------------------------------------------------------------------
+//	THREAD MANAGEMENT
+//-----------------------------------------------------------------------------
+void	init_timespecs(struct task_par* tp);
+void	update_activation_time(struct task_par* tp);
+void	update_abs_deadline(struct task_par* tp);
+void	wait_for_period(struct task_par* tp);
+int		deadline_miss(struct task_par* tp);
+void	mutex_init();
+
 
 #endif
