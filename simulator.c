@@ -34,6 +34,7 @@ float K_LQ[2][6] = {{-10.5196, -15.3011, -17.9183, -18.4205, 57.4907, 10.6342},
 //------------------------------------------------------------------------------
 struct state states[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
+struct trajectory_state traj_states[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION
@@ -45,6 +46,7 @@ struct kalman_state kalman_states[MAX_QUADROTORS];
 // 	the time of flight tf and
 //	the initial and final position (p0, pf)
 //------------------------------------------------------------------------------
+static
 float	trajectory(float t, float tf, float p0, float pf)
 {
 float	pow_tf_5, pow_tf_6, pow_tf_7, pow_tf_8, pow_tf_9;
@@ -80,6 +82,7 @@ float 	p;
 // 	the time of flight tf and
 //	the initial and final position (p0, pf)
 //------------------------------------------------------------------------------
+static
 float	trajectory_velocity(float t, float tf, float p0, float pf)
 {
 float	pow_tf_5, pow_tf_6, pow_tf_7, pow_tf_8, pow_tf_9;
@@ -114,6 +117,7 @@ float 	v;
 // 	the time of flight tf and
 //	the initial and final position (p0, pf)
 //------------------------------------------------------------------------------
+static
 float	trajectory_acceleration(float t, float tf, float p0, float pf)
 {
 float	pow_tf_5, pow_tf_6, pow_tf_7, pow_tf_8, pow_tf_9;
@@ -149,6 +153,7 @@ float 	a;
 // 	the time of flight tf and
 //	the initial and final position (p0, pf)
 //------------------------------------------------------------------------------
+static
 float	trajectory_jerk(float t, float tf, float p0, float pf)
 {
 float	pow_tf_5, pow_tf_6, pow_tf_7, pow_tf_8, pow_tf_9;
@@ -184,6 +189,7 @@ float 	j;
 // 	the time of flight tf and
 //	the initial and final position (p0, pf)
 //------------------------------------------------------------------------------
+static
 float	trajectory_jounce(float t, float tf, float p0, float pf)
 {
 float	pow_tf_5, pow_tf_6, pow_tf_7, pow_tf_8, pow_tf_9;
@@ -217,6 +223,7 @@ float 	j;
 // 	the time of flight tf and
 //	the initial and final coordinates (x0, y0, xf, yf)
 //------------------------------------------------------------------------------
+static
 float	pitch(float t, float tf, float x0, float y0, float xf, float yf)
 {
 float	x_acc, y_acc;
@@ -237,6 +244,7 @@ float	p;
 // 	the time of flight tf and
 //	the initial and final coordinates (x0, y0, xf, yf)
 //------------------------------------------------------------------------------
+static
 float	pitch_rate(float t, float tf, float x0, float y0, float xf, float yf)
 {
 float	x_acc, y_acc;
@@ -261,6 +269,7 @@ float	r;
 // 	the time of flight tf and
 //	the initial and final coordinates (x0, y0, xf, yf)
 //------------------------------------------------------------------------------
+static
 float	pitch_acceleration(float t, float tf, float x0, float y0, float xf, float yf)
 {
 float	x_acc, y_acc;
@@ -291,6 +300,7 @@ float	a;
 // 	the time of flight tf and
 //	the initial and final coordinates (x0, y0, xf, yf)
 //------------------------------------------------------------------------------
+static
 float	force_left(float t, float tf, float x0, float y0, float xf, float yf)
 {
 float 	x_acc, y_acc;
@@ -317,6 +327,7 @@ float	f;
 // 	the time of flight tf and
 //	the initial and final coordinates (x0, y0, xf, yf)
 //------------------------------------------------------------------------------
+static
 float	force_right(float t, float tf, float x0, float y0, float xf, float yf)
 {
 float 	x_acc, y_acc;
@@ -337,6 +348,49 @@ float	f;
 }
 
 //------------------------------------------------------------------------------
+//	Function get_reference_state
+//	evaluate the current reference state for the i-th quadrotor
+//	according to the initial and final time and positions (x0, y0, xf, yf)
+//	and the simulation time_step
+//	store the result in the array 'state' and 'input'
+//------------------------------------------------------------------------------
+static
+void	get_reference_state(int i, float time_step, float state[6], float input[2])
+{
+float	current_time, final_time, x0, y0, xf, yf;
+
+		// Save the guidance parameters using mutual exclusion
+		pthread_mutex_lock(&guidance_mutex[i]);
+
+		current_time = traj_states[i].current_time;
+		// Update the current time for the next call
+		traj_states[i].current_time += time_step;
+		//
+		final_time = traj_states[i].final_time;
+		x0 = traj_states[i].x0;
+		xf = traj_states[i].xf;
+		y0 = traj_states[i].y0;
+		yf = traj_states[i].yf;
+
+		pthread_mutex_unlock(&guidance_mutex[i]);
+
+		if (current_time > final_time)
+			current_time = final_time;
+
+		// Store the state
+		state[0] = trajectory(current_time, final_time, x0, xf);
+		state[1] = trajectory_velocity(current_time, final_time, x0, xf);
+		state[2] = trajectory(current_time, final_time, y0, yf);
+		state[3] = trajectory_velocity(current_time, final_time, y0, yf);
+		state[4] = pitch(current_time, final_time, x0, y0, xf, yf);
+		state[5] = pitch_rate(current_time, final_time, x0, y0, xf, yf);
+
+		// Store the input
+		input[0] = force_left(current_time, final_time, x0, y0, xf, yf);
+		input[1] = force_right(current_time, final_time, x0, y0, xf, yf);
+}
+
+//------------------------------------------------------------------------------
 // 	SYSTEM DYNAMICS AND NOISE
 //------------------------------------------------------------------------------
 
@@ -347,6 +401,7 @@ float	f;
 //	the sampling time 'T' and the previous state 'src'
 //	puts the result in 'dest'
 //------------------------------------------------------------------------------
+static
 void	dynamics(float T, float fl, float fr, float wind_x, float wind_y,\
 				 state src, state* dest)
 {
@@ -364,6 +419,7 @@ void	dynamics(float T, float fl, float fr, float wind_x, float wind_y,\
 //	noisy disturbances and mesasure
 //	puts the evaluated state in 'state' and the evaluated measures in 'mesasure'
 //------------------------------------------------------------------------------
+static
 void	system_io(int i, float T, float fl, float fr, state* state, float measure[3])
 {
 float	wind_x, wind_y, sigma_wind_x, sigma_wind_y;
@@ -393,6 +449,7 @@ float	x_m, y_m, theta_m, sigma_x_m, sigma_y_m, sigma_theta_m;
 //------------------------------------------------------------------------------
 //	FEEDBACK CONTROL
 //------------------------------------------------------------------------------
+static
 void	feedback_control(state current_state, state desired_trajectory,\
 						 float nominal_fl, float nominal_fr, float output[2])
 {
@@ -423,6 +480,7 @@ float	du[2][1];
 //	Function init_A
 //	initializes the i-th state Jacobian matrix given the sampling time T
 //------------------------------------------------------------------------------
+static
 void 	init_A(int i, float T)
 {
 int		j;
@@ -443,6 +501,7 @@ int		j;
 //	the a priori estimate of the pitch angle a_priori_theta
 //	and the right and left forces
 //------------------------------------------------------------------------------
+static
 void 	update_A(int i, float T, float a_priori_theta, float fl, float fr)
 {
 		kalman_states[i].A[1][4] = - (fl + fr) * T / M * cos(a_priori_theta);
@@ -453,6 +512,7 @@ void 	update_A(int i, float T, float a_priori_theta, float fl, float fr)
 //	Function init_W
 //	initializes the i-th noise input Jacobian matrix
 //------------------------------------------------------------------------------
+static
 void 	init_W(int i, float T)
 {
 		mat_zero(6, 3, kalman_states[i].W);
@@ -466,6 +526,7 @@ void 	init_W(int i, float T)
 //	Function init_C
 //	initializes the i-th output Jacobian matrix
 //------------------------------------------------------------------------------
+static
 void 	init_C(int i)
 {
 int 	j;
@@ -480,6 +541,7 @@ int 	j;
 //	initializes the i-th error state covariance matrix
 //	given the variances of the state
 //------------------------------------------------------------------------------
+static
 void 	init_P(int i, float sigma_x, float sigma_vx,\
 				float sigma_y, float sigma_vy,\
 				float sigma_theta, float sigma_vtheta)
@@ -498,6 +560,7 @@ void 	init_P(int i, float sigma_x, float sigma_vx,\
 //	Function init_Q
 //	initializes the i-th process noise covariance matrix
 //------------------------------------------------------------------------------
+static
 void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 {
 		mat_zero(2, 2, kalman_states[i].Q);
@@ -510,6 +573,7 @@ void 	init_Q(int i, float sigma_wind_x, float sigma_wind_y)
 //	Function init_R
 //	initializes the i-th measurement noise covariance matrix
 //------------------------------------------------------------------------------
+static
 void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 {
 		mat_zero(3, 3, kalman_states[i].R);
@@ -523,6 +587,7 @@ void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 //	Function init_state_estimate
 //	initializes the i-th state estimate
 //------------------------------------------------------------------------------
+static
 void 	init_state_estimate(int i, float x, float vx, float y,\
 							float vy, float theta, float vtheta)
 {
@@ -538,6 +603,7 @@ void 	init_state_estimate(int i, float x, float vx, float y,\
 //	Function ekf
 //	Extended Kalman Filter
 //------------------------------------------------------------------------------
+static
 void	ekf(int i, float T, float fl, float fr, float x_m, float y_m, float theta_m,
 			state* estimate)
 {
@@ -580,7 +646,7 @@ float	wind_x, wind_y;
 	//---------------------------------------------------------------------
 	//
 		// evaluate Kalman gain K
-		// K = K1 * inverse(K2) = (P_new * C') * inverse(C * P * C' + R);
+		// K = K1 * inverse(K2) = (P_new * C') * inverse(C * P_new * C' + R);
 		// K1
 		mat_transpose(3, 6, kalman_states[i].C, C_t);
 		mat_mul(6, 6, P1, 6, 3, C_t, K1);
@@ -624,6 +690,7 @@ float	wind_x, wind_y;
 //------------------------------------------------------------------------------
 //	Function init_state
 //------------------------------------------------------------------------------
+static
 void 	init_state(int i, float x, float vx, float y,\
 				   float vy, float theta, float vtheta)
 {
@@ -638,26 +705,26 @@ void 	init_state(int i, float x, float vx, float y,\
 //------------------------------------------------------------------------------
 //	Function simulate
 //------------------------------------------------------------------------------
-void 	print_header()
-{
-	printf("x,vx,y,vy,theta,vtheta,xe,vxe,ye,vye,thetae,vthetae\n");
-}
-void 	state_print(const state* s, const state* s1)
-{
-	printf("%f,", s->x);
-	printf("%f,", s->vx);
-	printf("%f,", s->y);
-	printf("%f,", s->vy);
-	printf("%f,", s->theta);
-	printf("%f,", s->vtheta);
-	printf("%f,", s1->x);
-	printf("%f,", s1->vx);
-	printf("%f,", s1->y);
-	printf("%f,", s1->vy);
-	printf("%f,", s1->theta);
-	printf("%f", s1->vtheta);
-	printf("\n");
-}
+/* void 	print_header() */
+/* { */
+/* 	printf("x,vx,y,vy,theta,vtheta,xe,vxe,ye,vye,thetae,vthetae\n"); */
+/* } */
+/* void 	state_print(const state* s, const state* s1) */
+/* { */
+/* 	printf("%f,", s->x); */
+/* 	printf("%f,", s->vx); */
+/* 	printf("%f,", s->y); */
+/* 	printf("%f,", s->vy); */
+/* 	printf("%f,", s->theta); */
+/* 	printf("%f,", s->vtheta); */
+/* 	printf("%f,", s1->x); */
+/* 	printf("%f,", s1->vx); */
+/* 	printf("%f,", s1->y); */
+/* 	printf("%f,", s1->vy); */
+/* 	printf("%f,", s1->theta); */
+/* 	printf("%f", s1->vtheta); */
+/* 	printf("\n"); */
+/*}*/
 
 void 	simulate()
 {
@@ -669,7 +736,6 @@ float	tf;
 float	T;
 state	desired_trajectory;
 
-		init_random_generator();	
 
 		// Input
 		i = 0;
@@ -692,7 +758,7 @@ state	desired_trajectory;
 		init_Q(i, 0.02, 0.02);
 		init_R(i, 1.0 /3, 1.0 / 3, 0.6 / 3);
 
-		print_header();
+		//print_header();
 
 		while (k * T <= tf)
 		{
@@ -721,9 +787,46 @@ state	desired_trajectory;
 			ekf(i, T, output[0], output[1], measure[0], measure[1], measure[2],
 				&kalman_states[i].estimate);
 
-			state_print(&states[i], &kalman_states[i].estimate);
+			//state_print(&states[i], &kalman_states[i].estimate);
 
 			k++;
 	}
 }
 
+void*	guidance_task(void* arg)
+{
+struct task_par* tp;
+int		task_id;
+
+		tp = (struct task_par*)arg;
+		task_id = tp->id;
+
+		init_timespecs(tp);
+
+		while(1) {
+
+			//if (traj_states[task_id].current_time > traj_states[task_id].final_time)
+				
+			deadline_miss(tp);
+			wait_for_period(tp);
+			update_activation_time(tp);
+			update_abs_deadline(tp);
+		}
+}
+
+void*	regulator_task(void* arg)
+{
+struct task_par* tp;
+
+		tp = (struct task_par*)arg;
+
+		init_timespecs(tp);
+
+		while(1) {
+
+			deadline_miss(tp);
+			wait_for_period(tp);
+			update_activation_time(tp);
+			update_abs_deadline(tp);
+		}
+}
