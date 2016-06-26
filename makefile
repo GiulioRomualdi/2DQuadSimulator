@@ -15,7 +15,7 @@ CC = gcc
 # CFLAGS will be the options passed to the compiler
 #---------------------------------------------------
 CFLAGS = -Wall
-FLAGS = -lm `pkg-config --cflags --libs allegro`
+FLAGS = -lm -lpthread `pkg-config --cflags --libs allegro`
 #---------------------------------------------------
 # Dependencies
 #---------------------------------------------------
