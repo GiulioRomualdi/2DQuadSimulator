@@ -8,10 +8,8 @@
 #include "unistd.h"
 
 //------------------------------------------------------------------------------
-//	SIMULATION WORLD CONSTANTS
+//	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
-#define	WORLD_W		8						// horizontal bound in m
-#define WORLD_H		4						// vertical bound in m
 #define GRAPHIC_W	1024  					// horizontal bound in pixel
 #define GRAPHIC_H	576						// vertical bound in pixel
 #define	SCALING		GRAPHIC_W / WORLD_W		// scale factor
@@ -32,6 +30,9 @@
 #define	GROUND_COL_G	76					// green channel for frame color
 #define GROUND_COL_B	68					// blue channel for frame color
 
+//------------------------------------------------------------------------------
+//	Function draw_quadrotor
+//------------------------------------------------------------------------------
 void	draw_quadrotor(float x, float y, float theta)
 {
 float	rot[3][3], transl[3][3], scale_[3][3], transformation[3][3];
@@ -72,26 +73,26 @@ int		fill_color, frame_color;
 		// TODO
 }
 
-int		main()
-{
-float	x, y, theta;
+/* int		main() */
+/* { */
+/* float	x, y, theta; */
 
-		x = 1;
-		y = 3;
-		theta = 0;
+/* 		x = 1; */
+/* 		y = 3; */
+/* 		theta = 0; */
 
-		// Allegro init
-		allegro_init();
-		set_color_depth(8);
-		set_gfx_mode(GFX_AUTODETECT_WINDOWED, GRAPHIC_W, GRAPHIC_H, 0, 0);
+/* 		// Allegro init */
+/* 		allegro_init(); */
+/* 		set_color_depth(8); */
+/* 		set_gfx_mode(GFX_AUTODETECT_WINDOWED, GRAPHIC_W, GRAPHIC_H, 0, 0); */
 
-		while(1)
-		{
-			clear_to_color(screen, 0);
-			draw_quadrotor(x, y, theta);
-			theta += 0.785 / 30;
-			usleep(33333);
-		}
-		allegro_exit();
-		return 0;
-}
+/* 		while(1) */
+/* 		{ */
+/* 			clear_to_color(screen, 0); */
+/* 			draw_quadrotor(x, y, theta); */
+/* 			theta += 0.785 / 30; */
+/* 			usleep(33333); */
+/* 		} */
+/* 		allegro_exit(); */
+/* 		return 0; */
+/* } */
