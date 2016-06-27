@@ -332,7 +332,7 @@ void	time_copy(struct timespec t_source, struct timespec* t_dest)
 void	time_add_delta(struct timespec* time, int delta)
 {
 		time->tv_sec += delta / 1000;
-		time->tv_sec += (delta % 1000) * 1000000;
+		time->tv_nsec += (delta % 1000) * 1000000;
 
 		if (time->tv_nsec > 1000000000) {
 			time->tv_nsec -= 1000000000;
