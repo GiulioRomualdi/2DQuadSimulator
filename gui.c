@@ -5,7 +5,6 @@
 #include <allegro.h>
 #include "simulator.h"
 #include "utils.h"
-#include "unistd.h"
 
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
@@ -72,27 +71,40 @@ int		fill_color, frame_color;
 		// Forces
 		// TODO
 }
+//------------------------------------------------------------------------------
+//	Function gui_task
+//------------------------------------------------------------------------------
+void*	gui_task(void* arg)
+{
+struct task_par* tp;
+float	x, y, theta;
+int		i;
+		tp = (struct task_par*)arg;
 
-/* int		main() */
-/* { */
-/* float	x, y, theta; */
+		init_timespecs(tp);
 
-/* 		x = 1; */
-/* 		y = 3; */
-/* 		theta = 0; */
+		// Allegro init
+		allegro_init();
+		set_color_depth(8);
+		set_gfx_mode(GFX_AUTODETECT_WINDOWED, GRAPHIC_W, GRAPHIC_H, 0, 0);
+		i = 0;
 
-/* 		// Allegro init */
-/* 		allegro_init(); */
-/* 		set_color_depth(8); */
-/* 		set_gfx_mode(GFX_AUTODETECT_WINDOWED, GRAPHIC_W, GRAPHIC_H, 0, 0); */
+		while(1) {
 
-/* 		while(1) */
-/* 		{ */
-/* 			clear_to_color(screen, 0); */
-/* 			draw_quadrotor(x, y, theta); */
-/* 			theta += 0.785 / 30; */
-/* 			usleep(33333); */
-/* 		} */
-/* 		allegro_exit(); */
-/* 		return 0; */
-/* } */
+			pthread_mutex_lock(&dynamics_mutex[i]);
+			x = states[i].x;
+			y = states[i].y;
+			theta = states[i].theta;
+			pthread_mutex_unlock(&dynamics_mutex[i]);
+
+			clear_to_color(screen, 0);
+			draw_quadrotor(x, y, theta);
+
+			// Handle thread parameters
+			deadline_miss(tp);
+			wait_for_period(tp);
+			update_activation_time(tp);
+			update_abs_deadline(tp);
+		}
+}
+
