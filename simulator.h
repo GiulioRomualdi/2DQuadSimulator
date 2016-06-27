@@ -58,6 +58,10 @@ extern struct trajectory_state traj_states[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 //	THREAD CODE FUNCTIONS
 //------------------------------------------------------------------------------
+void 	init_state_estimate(int i, float x, float vx, float y,\
+							float vy, float theta, float vtheta);
+void 	init_state(int i, float x, float vx, float y,\
+				   float vy, float theta, float vtheta);
 void*	regulator_task(void* arg);
 void*	guidance_task(void* arg);
 #endif
