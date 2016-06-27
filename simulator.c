@@ -10,17 +10,17 @@
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
-#define	M				1					// quadcopter mass in Kg
+#define	M				1.0					// quadcopter mass in Kg
 #define IZ				(M * L * L / 12)	// moment of inertia around axis x
 #define G				9.81				// gravitational acceleration in m/s^2
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION CONSTANTS
 //------------------------------------------------------------------------------
-#define	TRAJ_9			-70					// 9-th coeff. of trajectory polynomial
-#define TRAJ_8			315					// 8-th coeff. of trajectory polynomial
-#define TRAJ_7			-540				// 7-th coeff. of trajectory polynomial
-#define TRAJ_6			420					// 6-th coeff. of trajectory polynomial
-#define TRAJ_5			-126				// 5-th coeff. of trajectory polynomial
+#define	TRAJ_9			-70.0				// 9-th coeff. of trajectory polynomial
+#define TRAJ_8			315.0				// 8-th coeff. of trajectory polynomial
+#define TRAJ_7			-540.0				// 7-th coeff. of trajectory polynomial
+#define TRAJ_6			420.0				// 6-th coeff. of trajectory polynomial
+#define TRAJ_5			-126.0				// 5-th coeff. of trajectory polynomial
 
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
@@ -35,28 +35,6 @@ float K_LQ[2][6] = {{-10.5196, -15.3011, -17.9183, -18.4205, 57.4907, 10.6342},
 struct state states[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
 struct trajectory_state traj_states[MAX_QUADROTORS];
-
-void 	print_header()
-{
-	printf("x,vx,y,vy,theta,vtheta,xe,vxe,ye,vye,thetae,vthetae\n");
-}
-
-void 	state_print(const state* s, const state* s1)
-{
-	printf("%f,", s->x);
-	printf("%f,", s->vx);
-	printf("%f,", s->y);
-	printf("%f,", s->vy);
-	printf("%f,", s->theta);
-	printf("%f,", s->vtheta);
-	printf("%f,", s1->x);
-	printf("%f,", s1->vx);
-	printf("%f,", s1->y);
-	printf("%f,", s1->vy);
-	printf("%f,", s1->theta);
-	printf("%f", s1->vtheta);
-	printf("\n");
-}
 
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION
@@ -376,7 +354,7 @@ float	f;
 //	and the simulation time_step
 //	store the result in the 'state' and 'input'
 //------------------------------------------------------------------------------
-static
+//static
 void	get_reference_state(int i, float time_step, state* state_, float input[2])
 {
 float	current_time, final_time, x0, y0, xf, yf;
@@ -753,6 +731,10 @@ state	reference_trajectory, estimate, state;
 		init_ekf_matrix(tp->id, period);
 
 		while(1) {
+			// Recover the last evaluated state
+   			pthread_mutex_lock(&dynamics_mutex[tp->id]);
+			state = states[tp->id];
+			pthread_mutex_unlock(&dynamics_mutex[tp->id]);
 
 			// Get reference trajectory and reference input
 			get_reference_state(tp->id, period, &reference_trajectory, reference_input);
@@ -782,8 +764,6 @@ state	reference_trajectory, estimate, state;
 			wait_for_period(tp);
 			update_activation_time(tp);
 			update_abs_deadline(tp);
-
-			printf("wakeup\n");
 		}
 }
 //------------------------------------------------------------------------------
@@ -807,7 +787,7 @@ float	x0, y0, current_time, final_time, tf;
 			final_time = traj_states[tp->id].final_time;
 			pthread_mutex_unlock(&guidance_mutex[tp->id]);
 
-			if (current_time > final_time) {
+			if (current_time > final_time + 2) {
 
 				// Get the current state of the quadrotor
 				pthread_mutex_lock(&kalman_mutex[tp->id]);
