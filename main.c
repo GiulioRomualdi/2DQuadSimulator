@@ -6,15 +6,20 @@
 #include <stdio.h>
 #include "utils.h"
 #include "simulator.h"
+#include "gui.h"
 
 int				main()
 {
 struct task_par regulator_tp[MAX_QUADROTORS];
 struct task_par guidance_tp[MAX_QUADROTORS];
+struct task_par	gui_tp;
 pthread_t		regulator_tid[MAX_QUADROTORS];
 pthread_t		guidance_tid[MAX_QUADROTORS];
+pthread_t		gui_tid;
 pthread_attr_t	regulator_attr[MAX_QUADROTORS];
 pthread_attr_t	guidance_attr[MAX_QUADROTORS];
+pthread_attr_t	gui_attr;
+
 int	i;
 
 	i = 0;
@@ -52,8 +57,8 @@ int	i;
 
 	// Regulator
 	regulator_tp[i].id = i;
-	regulator_tp[i].period = 1000;
-	regulator_tp[i].deadline = 1000;
+	regulator_tp[i].period = 1;
+	regulator_tp[i].deadline = 1;
 	regulator_tp[i].dmiss = 0;
 
 	pthread_attr_init(&regulator_attr[i]);
@@ -62,8 +67,21 @@ int	i;
 
 	pthread_create(&regulator_tid[i], &regulator_attr[i], regulator_task, &regulator_tp[i]);
 
+	// gui
+	gui_tp.id = i;
+	gui_tp.period = 34;
+	gui_tp.deadline = 34;
+	gui_tp.dmiss = 0;
+
+	pthread_attr_init(&gui_attr);
+	/* pthread_attr_setinheritsched(&attr[i], PTHREAD_EXPLICIT_SCHED); */
+	/* pthread_attr_setschedpolicy(&attr[i], SCHED_FIFO); */
+
+	pthread_create(&gui_tid, &gui_attr, gui_task, &gui_tp);
+
 	pthread_join(regulator_tid[i], NULL);
 	pthread_join(guidance_tid[i], NULL);
+	pthread_join(gui_tid, NULL);
 
 	return 0;
 }
