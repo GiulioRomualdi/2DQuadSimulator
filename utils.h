@@ -23,6 +23,8 @@ struct	task_par {								// task parameters
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------
 extern pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
+extern pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
+extern pthread_mutex_t kalman_mutex[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
