@@ -3,8 +3,9 @@
 //------------------------------------------------------------------------------
 
 #include <time.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "utils.h"
 #include "simulator.h"
 
@@ -440,4 +441,45 @@ struct timespec current_time;
 		}
 
 		return 0;
+}
+
+//-----------------------------------------------------------------------------
+//	DEBUG
+//-----------------------------------------------------------------------------
+void 	print_header()
+{
+		printf("x,vx,y,vy,theta,vtheta,xe,vxe,ye,vye,thetae,vthetae\n");
+}
+
+void 	print_state(const state* s, const state* s1)
+{
+		printf("%f,", s->x);
+		printf("%f,", s->vx);
+		printf("%f,", s->y);
+		printf("%f,", s->vy);
+		printf("%f,", s->theta);
+		printf("%f,", s->vtheta);
+		printf("%f,", s1->x);
+		printf("%f,", s1->vx);
+		printf("%f,", s1->y);
+		printf("%f,", s1->vy);
+		printf("%f,", s1->theta);
+		printf("%f", s1->vtheta);
+		printf("\n");
+}
+
+void 	print_state_1(const state* s)
+{
+		printf("%f,", s->x);
+		printf("%f,", s->vx);
+		printf("%f,", s->y);
+		printf("%f,", s->vy);
+		printf("%f,", s->theta);
+		printf("%f,", s->vtheta);
+		printf("\n");
+}
+
+void	print_u(float u[2])
+{
+		printf("%f, %f\n",u[0], u[1]);
 }

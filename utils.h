@@ -69,5 +69,12 @@ void	wait_for_period(struct task_par* tp);
 int		deadline_miss(struct task_par* tp);
 void	mutex_init();
 
+//-----------------------------------------------------------------------------
+//	DEBUG
+//-----------------------------------------------------------------------------
+void	print_header();
+void	print_state(const state*, const state*);
+void	print_state_1(const state*);
+void	print_u(float u[2]);
 
 #endif
