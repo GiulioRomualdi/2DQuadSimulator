@@ -18,7 +18,8 @@
 //------------------------------------------------------------------------------
 //	Mutex required for mutual exclusion
 pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
-
+pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
+pthread_mutex_t kalman_mutex[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 //	MATRIX HANDLING FUNCTION
 //------------------------------------------------------------------------------
@@ -283,7 +284,8 @@ float	T, sample;
 		// The length of the interval is std * sqrt(12)
 		T = std * sqrt(12);
 		// Forces the sample to be in the range [-T/2, T/2]
-		sample = fmod(rand(), T) - T / 2;
+		// sample = fmod(rand(), T) - T / 2;
+		sample = get_uniform(T) - T / 2;
 
 		return sample;
 }
@@ -368,8 +370,11 @@ void	mutex_init()
 {
 int		i;
 
-		for(i = 0; i < MAX_QUADROTORS; i++)
+		 for(i = 0; i < MAX_QUADROTORS; i++) {
 			pthread_mutex_init(&guidance_mutex[i], NULL);
+			pthread_mutex_init(&dynamics_mutex[i], NULL);
+			pthread_mutex_init(&kalman_mutex[i], NULL);
+		 }
 }
 
 //-----------------------------------------------------------------------------
