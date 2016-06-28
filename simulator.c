@@ -26,8 +26,14 @@
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
 // Discrete Linear Quadratic (LQ) gain matrix
-float K_LQ[2][6] = {{-10.5196, -15.3011, -17.9183, -18.4205, 57.4907, 10.6342},
-					{10.5196, 15.3011, -17.9183, -18.4205, -57.4907, -10.6342}};
+
+//T = 1ms
+/* float K_LQ[2][6] = {{-10.5196, -15.3011, -17.9183, -18.4205, 57.4907, 10.6342}, */
+/* 					{10.5196, 15.3011, -17.9183, -18.4205, -57.4907, -10.6342}}; */
+
+//T = 10ms
+float K_LQ[2][6] = {{-1.5295, -2.2586, -15.1509, -15.7189, 8.7459, 1.6575},
+					{1.5295, 2.2586, -15.1509, -15.7189, -8.7459, -1.6575}};
 
 //------------------------------------------------------------------------------
 //	GLOABAL DATA STRUCTURES DEFINITIONS
@@ -35,6 +41,7 @@ float K_LQ[2][6] = {{-10.5196, -15.3011, -17.9183, -18.4205, 57.4907, 10.6342},
 struct state states[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
 struct trajectory_state traj_states[MAX_QUADROTORS];
+struct force forces[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION
@@ -741,7 +748,7 @@ state	reference_trajectory, estimate, state;
 
 			// Evaluate the real input to the system
 			feedback_control(kalman_states[tp->id].estimate, reference_trajectory,\
-							 reference_input[0], reference_input[0], real_input);
+							 reference_input[0], reference_input[1], real_input);
 
 			// Evaluate the output of the system
 			system_io(tp->id, period, real_input[0], real_input[1], &state, measure);
@@ -759,8 +766,14 @@ state	reference_trajectory, estimate, state;
 			states[tp->id] = state;
 			pthread_mutex_unlock(&dynamics_mutex[tp->id]);
 
+   			pthread_mutex_lock(&force_mutex[tp->id]);
+			forces[tp->id].force_left = real_input[0];
+			forces[tp->id].force_right = real_input[1];
+			pthread_mutex_unlock(&force_mutex[tp->id]);
+
 			// Handle thread parameters
-			deadline_miss(tp);
+			if(deadline_miss(tp))
+				printf("%d\n", tp->dmiss);
 			wait_for_period(tp);
 			update_activation_time(tp);
 			update_abs_deadline(tp);

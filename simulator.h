@@ -44,12 +44,17 @@ struct	trajectory_state {
 		float			yf;				// in m
 };
 
+struct	force {
+		float			force_left;		// left force in N
+		float			force_right;	// right force in N
+};
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------
 extern struct state states[MAX_QUADROTORS];
 extern struct kalman_state kalman_states[MAX_QUADROTORS];
 extern struct trajectory_state traj_states[MAX_QUADROTORS];
+extern struct force forces[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
