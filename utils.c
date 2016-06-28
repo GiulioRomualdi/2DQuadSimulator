@@ -21,6 +21,8 @@
 pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
 pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
 pthread_mutex_t kalman_mutex[MAX_QUADROTORS];
+pthread_mutex_t force_mutex[MAX_QUADROTORS];
+
 //------------------------------------------------------------------------------
 //	MATRIX HANDLING FUNCTION
 //------------------------------------------------------------------------------
@@ -375,6 +377,7 @@ int		i;
 			pthread_mutex_init(&guidance_mutex[i], NULL);
 			pthread_mutex_init(&dynamics_mutex[i], NULL);
 			pthread_mutex_init(&kalman_mutex[i], NULL);
+			pthread_mutex_init(&force_mutex[i], NULL);
 		 }
 }
 
