@@ -8,12 +8,6 @@
 #include "utils.h"
 
 //------------------------------------------------------------------------------
-//	2D QUADCOPTER CONSTANTS
-//------------------------------------------------------------------------------
-#define	M				1.0					// quadcopter mass in Kg
-#define IZ				(M * L * L / 12)	// moment of inertia around axis x
-#define G				9.81				// gravitational acceleration in m/s^2
-//------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION CONSTANTS
 //------------------------------------------------------------------------------
 #define	TRAJ_9			-70.0				// 9-th coeff. of trajectory polynomial
@@ -21,7 +15,6 @@
 #define TRAJ_7			-540.0				// 7-th coeff. of trajectory polynomial
 #define TRAJ_6			420.0				// 6-th coeff. of trajectory polynomial
 #define TRAJ_5			-126.0				// 5-th coeff. of trajectory polynomial
-
 //------------------------------------------------------------------------------
 //	STANDARD DEVIATION CONSTANTS
 //------------------------------------------------------------------------------
@@ -31,8 +24,8 @@
 #define VY0_STD			1.0 / 3.0			// std of vy0
 #define THETA0_STD		0.6 / 3.0			// std of theta0
 #define VTHETA0_STD		0.0					// std of vtheta0
-#define	WIND_X_STD 		0.02				// std of the force due to wind along x
-#define WIND_Y_STD		0.02				// std of the force due to wind along y
+#define	WIND_X_STD 		1.0					// std of the force due to wind along x
+#define WIND_Y_STD		1.0					// std of the force due to wind along y
 #define NOISE_X_STD		1.0 / 3.0			// std of x measurament noise
 #define NOISE_Y_STD		1.0 / 3.0			// std of y measurament noise
 #define NOISE_THETA_STD	0.6 / 3.0			// std of theta measurament noise
@@ -376,7 +369,7 @@ float	f;
 //	and the simulation time_step
 //	store the result in the 'state' and 'input'
 //------------------------------------------------------------------------------
-//static
+static
 void	get_reference_state(int i, float time_step, state* state_, float input[2])
 {
 float	current_time, final_time, x0, y0, xf, yf;
@@ -411,7 +404,7 @@ float	current_time, final_time, x0, y0, xf, yf;
 }
 
 //------------------------------------------------------------------------------
-// 	SYSTEM DYNAMICS AND NOISE
+// 	SYSTEM DYNAMICS, SYSTEM IO, SYSTEM FEEDBACK
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -481,7 +474,8 @@ float	x_m, y_m, theta_m, sigma_x_m, sigma_y_m, sigma_theta_m;
 }
 
 //------------------------------------------------------------------------------
-//	FEEDBACK CONTROL
+//	Function feedback_control
+//	evaluates the output of the feedback controller
 //------------------------------------------------------------------------------
 static
 void	feedback_control(state current_state, state desired_trajectory,\
@@ -735,6 +729,31 @@ float	wind_x, wind_y;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+//	Function set_initial_condition
+//	set the initial condition for the i-th simulation (state, estimate, trajectory)
+//------------------------------------------------------------------------------
+void	set_initial_condition(int i)
+{
+float	x0, y0;
+
+		// Init state
+		x0 = get_uniform_generic(L, WORLD_W - L);
+		y0 = get_uniform_generic(L, WORLD_H - L);
+		init_state(i, x0, 0, y0, 0, 0, 0);
+
+		// Init estimate
+		init_state_estimate(i, x0, 0, y0, 0, 0, 0);
+
+		// Init trajectory
+		traj_states[i].current_time = 0;
+		traj_states[i].final_time = 3;
+		traj_states[i].x0 = x0;
+		traj_states[i].y0 = y0;
+		traj_states[i].xf = x0;
+		traj_states[i].yf = y0;
+}
+
+//------------------------------------------------------------------------------
 //	Function regulator_task
 //------------------------------------------------------------------------------
 void*	regulator_task(void* arg)
@@ -799,10 +818,10 @@ state	reference_trajectory, estimate, state;
 void*	guidance_task(void* arg)
 {
 struct task_par* tp;
-float	x0, y0, current_time, final_time, tf;
+float	x0, y0, xf, yf;
+float	current_time, final_time, tf;
 
 		tp = (struct task_par*)arg;
-		tf = 3;
 
 		init_timespecs(tp);
 
@@ -814,7 +833,7 @@ float	x0, y0, current_time, final_time, tf;
 			final_time = traj_states[tp->id].final_time;
 			pthread_mutex_unlock(&guidance_mutex[tp->id]);
 
-			if (current_time > final_time + 2) {
+			if (current_time > final_time) {
 
 				// Get the current state of the quadrotor
 				pthread_mutex_lock(&kalman_mutex[tp->id]);
@@ -822,14 +841,26 @@ float	x0, y0, current_time, final_time, tf;
 				y0 = kalman_states[tp->id].estimate.y;
 				pthread_mutex_unlock(&kalman_mutex[tp->id]);
 
+				// Choose new target and final time
+				xf = get_uniform_generic(L, WORLD_W - L);
+				yf = get_uniform_generic(L, WORLD_H - L);
+
+				tf = sqrt(pow(xf - x0, 2) + pow(yf - y0, 2));
+				// Not too short
+				if (tf < 2)
+					tf = 2;
+				// Not too long
+				if (tf > 5)
+					tf = 5;
+
 				// Update guidance parameters
 				pthread_mutex_lock(&guidance_mutex[tp->id]);
 				traj_states[tp->id].current_time = 0;
 				traj_states[tp->id].final_time = tf;
 				traj_states[tp->id].x0 = x0;
 				traj_states[tp->id].y0 = y0;
-				traj_states[tp->id].xf = get_uniform(WORLD_W);
-				traj_states[tp->id].yf = get_uniform(WORLD_H);
+				traj_states[tp->id].xf = xf;
+				traj_states[tp->id].yf = yf;
 				pthread_mutex_unlock(&guidance_mutex[tp->id]);
 
 			}

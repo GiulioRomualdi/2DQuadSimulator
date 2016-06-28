@@ -4,8 +4,12 @@
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
+#define	L				0.38			// quadcopter length in m
+#define	M				1.0				// quadcopter mass in Kg
+#define IZ				(M * L * L /12)	// moment of inertia around axis x
+#define G				9.81			// gravitational acceleration in m/s^2
 #define MAX_QUADROTORS	5	   			// max number of quadrotor
-#define L				0.38			// quadcopter length in m
+
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
@@ -67,6 +71,7 @@ void 	init_state_estimate(int i, float x, float vx, float y,\
 							float vy, float theta, float vtheta);
 void 	init_state(int i, float x, float vx, float y,\
 				   float vy, float theta, float vtheta);
+void	set_initial_condition(int i);
 void*	regulator_task(void* arg);
 void*	guidance_task(void* arg);
 #endif
