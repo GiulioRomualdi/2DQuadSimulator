@@ -271,6 +271,21 @@ float	sample;
 }
 
 //------------------------------------------------------------------------------
+//	Function get_uniform_generic
+//	returns a sample taken from a uniform distribution U(a, b) given a and b
+//------------------------------------------------------------------------------
+float	get_uniform_generic(float a, float b)
+{
+float	sample;
+
+		// Generate a uniform sample in [0, 1]
+		sample = get_uniform(b - a);
+		sample += a;
+
+		return sample;
+}
+
+//------------------------------------------------------------------------------
 //	Function get_uniform_from_std
 //	returns a sample taken from a uniform distribution U(-T/2, T/2)
 //	T = std / sqrt(12) where 'std' is the standard deviation

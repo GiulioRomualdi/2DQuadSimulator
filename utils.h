@@ -18,6 +18,7 @@ struct	task_par {								// task parameters
 		struct	timespec 	activation_time;	// next activation time
 		struct	timespec	abs_deadline;		// absolute
 };
+typedef struct task_par task_par;
 
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
@@ -51,6 +52,7 @@ void	scale(float matrix[3][3], float k);
 //------------------------------------------------------------------------------
 void	init_random_generator();
 float	get_uniform(float T);
+float	get_uniform_generic(float a, float b);
 float	get_gaussian(float std);
 
 //------------------------------------------------------------------------------
