@@ -23,6 +23,21 @@
 #define TRAJ_5			-126.0				// 5-th coeff. of trajectory polynomial
 
 //------------------------------------------------------------------------------
+//	STANDARD DEVIATION CONSTANTS
+//------------------------------------------------------------------------------
+#define	X0_STD			1.0 / 3.0			// std of x0
+#define VX0_STD			1.0 / 3.0			// std of vx0
+#define Y0_STD			1.0 / 3.0			// std of y0
+#define VY0_STD			1.0 / 3.0			// std of vy0
+#define THETA0_STD		0.6 / 3.0			// std of theta0
+#define VTHETA0_STD		0.0					// std of vtheta0
+#define	WIND_X_STD 		0.02				// std of the force due to wind along x
+#define WIND_Y_STD		0.02				// std of the force due to wind along y
+#define NOISE_X_STD		1.0 / 3.0			// std of x measurament noise
+#define NOISE_Y_STD		1.0 / 3.0			// std of y measurament noise
+#define NOISE_THETA_STD	0.6 / 3.0			// std of theta measurament noise
+
+//------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
 // Discrete Linear Quadratic (LQ) gain matrix
@@ -609,12 +624,12 @@ void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 void 	init_state_estimate(int i, float x, float vx, float y,\
 							float vy, float theta, float vtheta)
 {
-		kalman_states[i].estimate.x = x;
-		kalman_states[i].estimate.vx = vx;
-		kalman_states[i].estimate.y = y;
-		kalman_states[i].estimate.vy = vy;
-		kalman_states[i].estimate.theta = theta;
-		kalman_states[i].estimate.vtheta = vtheta;
+		kalman_states[i].estimate.x = x + get_gaussian(X0_STD);
+		kalman_states[i].estimate.vx = vx + get_gaussian(VX0_STD);
+		kalman_states[i].estimate.y = y + get_gaussian(Y0_STD);
+		kalman_states[i].estimate.vy = vy + get_gaussian(VY0_STD);
+		kalman_states[i].estimate.theta = theta + get_gaussian(THETA0_STD);
+		kalman_states[i].estimate.vtheta = vtheta + get_gaussian(VTHETA0_STD);
 }
 
 //------------------------------------------------------------------------------
@@ -626,10 +641,9 @@ void	init_ekf_matrix(int i, float T)
 		init_A(i, T);
 		init_W(i, T);
 		init_C(i);
-		init_P(i, 1.0 / 3, 1.0 / 3, 1.0 / 3,\
-				  1.0 / 3, 0.6 / 3, 0);
-		init_Q(i, 0.02, 0.02);
-		init_R(i, 1.0 / 3, 1.0 / 3, 0.6 / 3);
+		init_P(i, X0_STD, VX0_STD, Y0_STD, VY0_STD, THETA0_STD, VTHETA0_STD);
+		init_Q(i, WIND_X_STD, WIND_Y_STD);
+		init_R(i, NOISE_X_STD, NOISE_Y_STD, NOISE_THETA_STD);
 }
 
 //------------------------------------------------------------------------------
