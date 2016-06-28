@@ -100,11 +100,6 @@ int		i;
 
 		init_timespecs(tp);
 
-		// Allegro init
-		allegro_init();
-		set_color_depth(8);
-		set_gfx_mode(GFX_AUTODETECT_WINDOWED, GRAPHIC_W, GRAPHIC_H, 0, 0);
-
 		while(1) {
 
 			clear_to_color(screen, 0);

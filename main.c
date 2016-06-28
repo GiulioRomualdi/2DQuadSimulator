@@ -6,6 +6,7 @@
 #include <error.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <allegro.h>
 #include "utils.h"
 #include "simulator.h"
 #include "gui.h"
@@ -19,6 +20,19 @@
 #define REGULATOR_DEADLINE	10		// regulator task relative deadline in ms
 #define GUI_PERIOD			15		// gui task period in ms
 #define GUI_DEADLINE		15		// gui task relative deadline in ms
+
+//------------------------------------------------------------------------------
+//	GLOABAL VARIABLE DEFINITIONS
+//------------------------------------------------------------------------------
+task_par 		regulator_tp[MAX_QUADROTORS];
+pthread_t 		regulator_tid[MAX_QUADROTORS];
+pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
+task_par 		guidance_tp[MAX_QUADROTORS];
+pthread_t		guidance_tid[MAX_QUADROTORS];
+pthread_attr_t	guidance_attr[MAX_QUADROTORS];
+task_par		gui_tp[1];
+pthread_t		gui_tid[1];
+pthread_attr_t	gui_attr[1];
 
 //------------------------------------------------------------------------------
 //	Function create_task
@@ -54,51 +68,84 @@ int 	error;
 		return 0;
 }
 
-int		main()
+int		wait_for_task_end()
 {
-task_par 		regulator_tp[MAX_QUADROTORS];
-pthread_t 		regulator_tid[MAX_QUADROTORS];
-pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
+int 	i, error;
 
-task_par 		guidance_tp[MAX_QUADROTORS];
-pthread_t		guidance_tid[MAX_QUADROTORS];
-pthread_attr_t	guidance_attr[MAX_QUADROTORS];
+		for(i = 0; i < MAX_QUADROTORS; i++) {
+			error = pthread_join(regulator_tid[i], NULL);
+			if (error != 0) {
+				perror("(pthread_join) Error:");
+				return error;
+			}
 
-task_par		gui_tp[1];
-pthread_t		gui_tid[1];
-pthread_attr_t	gui_attr[1];
+			error = pthread_join(guidance_tid[i], NULL);
+			if (error != 0) {
+				perror("(pthread_join) Error:");
+				return error;
+			}
+		}
+		error = pthread_join(gui_tid[0], NULL);
+		if (error != 0) {
+			perror("(pthread_join) Error:");
+		}
+	
+		return 0;
+}
 
-int		error, i;
+//------------------------------------------------------------------------------
+//	Function init
+//------------------------------------------------------------------------------
+static
+int		init()
+{
+int		i, error;
 
-		// Init
+		// allegro
+		allegro_init();
+		set_color_depth(8);
+		set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1024, 576, 0, 0);
+
+		// random number generation
 		init_random_generator();
+
+		// mutexes
 		mutex_init();
+
+		// dynamics, ekf and trajectories initial conditions
 		for (i = 0; i < MAX_QUADROTORS; i++)
 			set_initial_condition(i);
 
-		// Create tasks
+		// threads
 		error = create_task(guidance_tp, guidance_tid, guidance_attr,\
 							guidance_task, GUIDANCE_PERIOD,\
 							GUIDANCE_DEADLINE, MAX_QUADROTORS);
 		if(error != 0)
-			return EXIT_FAILURE;
+			return error;
 
 		error = create_task(regulator_tp, regulator_tid, regulator_attr,\
 							regulator_task, REGULATOR_PERIOD,\
 							REGULATOR_DEADLINE, MAX_QUADROTORS);
 		if(error != 0)
-			return EXIT_FAILURE;
+			return error;
 
 		error = create_task(gui_tp, gui_tid, gui_attr,\
 							gui_task, GUI_PERIOD, GUI_DEADLINE, 1);
 		if(error != 0)
+			return error;
+
+		return 0;
+}
+
+int		main()
+{
+		if (init() != 0)
 			return EXIT_FAILURE;
 
-		for(i = 0; i < MAX_QUADROTORS; i++) {
-			pthread_join(regulator_tid[i], NULL);
-			pthread_join(guidance_tid[i], NULL);
-		}
-		pthread_join(gui_tid[0], NULL);
+		if (wait_for_task_end() != 0)
+			return EXIT_FAILURE;
+
+		allegro_exit();
 
 		return EXIT_SUCCESS;
 }
