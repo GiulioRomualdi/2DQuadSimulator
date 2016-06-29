@@ -89,7 +89,7 @@ int 	i, error;
 		if (error != 0) {
 			perror("(pthread_join) Error:");
 		}
-	
+
 		return 0;
 }
 
@@ -103,7 +103,7 @@ int		i, error;
 
 		// allegro
 		allegro_init();
-		set_color_depth(8);
+		set_color_depth(32);
 		set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1024, 576, 0, 0);
 
 		// random number generation
