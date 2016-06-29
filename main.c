@@ -11,15 +11,6 @@
 #include "simulator.h"
 #include "gui.h"
 
-//------------------------------------------------------------------------------
-//	TASK CONSTANTS
-//------------------------------------------------------------------------------
-#define GUIDANCE_PERIOD		1000	// guidance task period in ms
-#define GUIDANCE_DEADLINE	1000	// guidance task relative deadline in ms
-#define REGULATOR_PERIOD	10		// regulator task period in ms
-#define REGULATOR_DEADLINE	10		// regulator task relative deadline in ms
-#define GUI_PERIOD			15		// gui task period in ms
-#define GUI_DEADLINE		15		// gui task relative deadline in ms
 
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
@@ -104,7 +95,7 @@ int		i, error;
 		// allegro
 		allegro_init();
 		set_color_depth(32);
-		set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1024, 576, 0, 0);
+		set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1324, 600, 0, 0);
 
 		// random number generation
 		init_random_generator();

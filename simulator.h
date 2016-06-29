@@ -4,17 +4,25 @@
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
-#define	L				0.38			// quadcopter length in m
-#define	M				1.0				// quadcopter mass in Kg
-#define IZ				(M * L * L /12)	// moment of inertia around axis x
-#define G				9.81			// gravitational acceleration in m/s^2
-#define MAX_QUADROTORS	5	   			// max number of quadrotor
+#define	L					0.38			// quadcopter length in m
+#define	M					1.0				// quadcopter mass in Kg
+#define IZ					(M * L * L /12)	// moment of inertia around axis x
+#define G					9.81			// gravitational acceleration in m/s^2
+#define MAX_QUADROTORS		5	   			// max number of quadrotor
 
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
-#define	WORLD_W			8				// horizontal bound in m
-#define WORLD_H			4				// vertical bound in m
+#define	WORLD_W				8				// horizontal bound in m
+#define WORLD_H				4				// vertical bound in m
+
+//------------------------------------------------------------------------------
+//	TASK CONSTANTS
+//------------------------------------------------------------------------------
+#define GUIDANCE_PERIOD		1000.0			// guidance task period in ms
+#define GUIDANCE_DEADLINE	1000.0			// guidance task relative deadline in ms
+#define REGULATOR_PERIOD	10.0			// regulator task period in ms
+#define REGULATOR_DEADLINE	10.0			// regulator task relative deadline in ms
 
 //------------------------------------------------------------------------------
 //	DATA STRUCTURES DECLARATIONS
