@@ -19,17 +19,17 @@
 #define FLY_W			960.0					// flying area width in pixel
 #define FLY_H			540.0					// flying area heigth in pixel
 #define	FLY_X			30.0					// flying area upper-left corner (x)
-#define	FLY_Y			60.0					// flying area upper-left corner (y)
+#define	FLY_Y			50.0					// flying area upper-left corner (y)
 #define	FLY_SCALING		(FLY_W / WORLD_W)		// scale factor
 //------------------------------------------------------------------------------
 //	PLOT AREA CONSTANTS
 //-----------------------------------------------------------------------------
 #define	PLOT_TOP_MARGIN	FLY_Y					// top margin of plot area in pixel	
 #define	PLOT_MARGIN		1.0						// inner plot margin in pixel
-#define	PLOT_SPACING	10.0					// spacing between consecutive plots in pixel
+#define	PLOT_SPACING	12.0					// spacing between consecutive plots in pixel
 //-----------------------------------------------------------------------------
 #define PLOT_W			270.0					// plot area width in pixel
-#define PLOT_H		   	163.0					// plot area heigth in pixel
+#define PLOT_H		   	170.0					// plot area heigth in pixel
 #define	PLOT_SCALE_X	(PLOT_W / BUFF_SIZE)	// scale factor for the time axis
 //-----------------------------------------------------------------------------
 #define	PLOT_X_X		FLY_X + FLY_W + 2 * MARGIN + PLOT_MARGIN
@@ -61,9 +61,9 @@
 #define LAYOUT_COL_G	49						// green channel for layout
 #define LAYOUT_COL_B	49						// blue channel for layout
 //------------------------------------------------------------------------------
-#define SKY_COL_R		0						// red channel for sky color
-#define	SKY_COL_G	   	0						// green channel for sky color
-#define SKY_COL_B		0						// blue channel for sky color
+#define SKY_COL_R		10						// red channel for sky color
+#define	SKY_COL_G	   	10						// green channel for sky color
+#define SKY_COL_B		10						// blue channel for sky color
 //------------------------------------------------------------------------------
 #define TEXT_COL_R  	180						// red channel for text
 #define TEXT_COL_G		180						// green channel for text
@@ -243,9 +243,9 @@ int		title_col;
 		textout_centre_ex(screen, font_title, "2D Quad Simulator",\
 						  WINDOW_W / 2, 5, title_col, -1);
 		textout_centre_ex(screen, font_subtitles, "errors",\
-						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 20, title_col, -1);
+						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 25, title_col, -1);
 		textout_centre_ex(screen, font_subtitles, "view",\
-						  FLY_X + FLY_W / 2, FLY_Y - 20, title_col, -1);
+						  FLY_X + FLY_W / 2, FLY_Y - 25, title_col, -1);
 }
 
 //------------------------------------------------------------------------------
