@@ -4,14 +4,19 @@
 //------------------------------------------------------------------------------
 //	TASK CONSTANTS
 //------------------------------------------------------------------------------
-#define GUI_PERIOD		34		// gui task period in ms
-#define GUI_DEADLINE	34		// gui task relative deadline in ms
-
+#define GUI_PERIOD		34			// gui task period in ms
+#define GUI_DEADLINE	34			// gui task relative deadline in ms
 //------------------------------------------------------------------------------
 //	PLOT CONSTANTS
 //------------------------------------------------------------------------------
-#define MAX_PLOT_TIME	8		// maximum plot time in s
-#define BUFF_SIZE		MAX_PLOT_TIME * 1000 / GUI_PERIOD
+#define MAX_PLOT_TIME	8			// maximum plot time in s
+#define BUFF_SIZE		(MAX_PLOT_TIME * 1000 / GUI_PERIOD)
+//------------------------------------------------------------------------------
+//	SIZE CONSTANTS
+//------------------------------------------------------------------------------
+#define WINDOW_W		1350		// main window width
+#define WINDOW_H		740			// main window height
+
 
 //------------------------------------------------------------------------------
 //	DATA STRUCTURES DECLARATIONS

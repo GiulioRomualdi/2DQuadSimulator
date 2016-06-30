@@ -9,68 +9,89 @@
 #include "gui.h"
 
 //------------------------------------------------------------------------------
+// LAYOUT CONSTANTS
+//------------------------------------------------------------------------------
+#define MARGIN			30.0					// margin width in pixel
+#define	LINE_OFFSET		30.0					// layout line offset in pixel
+//------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
-#define FLY_W			1024.0				// flying area width in pixel
-#define FLY_H			576.0				// flying area heigth in pixel
-#define	FLY_X			0					// flying area upper-left corner (x)
-#define	FLY_Y			0					// flying area upper-left corner (y)
-#define	FLY_SCALING		FLY_W / WORLD_W		// scale factor
+#define FLY_W			960.0					// flying area width in pixel
+#define FLY_H			540.0					// flying area heigth in pixel
+#define	FLY_X			30.0					// flying area upper-left corner (x)
+#define	FLY_Y			30.0					// flying area upper-left corner (y)
+#define	FLY_SCALING		(FLY_W / WORLD_W)		// scale factor
 //------------------------------------------------------------------------------
 //	PLOT AREA CONSTANTS
 //-----------------------------------------------------------------------------
-#define PLOT_W			300.0				// plot area width in pixel
-#define PLOT_H		   	200.0				// plot area heigth in pixel
-#define	PLOT_SCALE_X	PLOT_W /(BUFF_SIZE)	// scale factor for the time axis
+#define	PLOT_TOP_MARGIN	FLY_Y + 25				// top margin of plot area in pixel	
+#define	PLOT_MARGIN		1.0						// inner plot margin in pixel
+#define	PLOT_SPACING	10.0					// spacing between consecutive plots in pixel
 //-----------------------------------------------------------------------------
-#define	PLOT_X_X		1024.0				// plot x area upper-left corner (x)
-#define	PLOT_X_Y		0.0					// plot x area upper-left corner (y)
-#define	PLOT_X_MAX		0.5					// max value of data
+#define PLOT_W			270.0					// plot area width in pixel
+#define PLOT_H		   	163.0					// plot area heigth in pixel
+#define	PLOT_SCALE_X	(PLOT_W / BUFF_SIZE)	// scale factor for the time axis
+//-----------------------------------------------------------------------------
+#define	PLOT_X_X		FLY_X + FLY_W + 2 * MARGIN + PLOT_MARGIN
+#define	PLOT_X_Y		PLOT_TOP_MARGIN + PLOT_MARGIN
+#define	PLOT_X_MAX		0.5						// max value of data
 //------------------------------------------------------------------------------
-#define	PLOT_Y_X		1024.0				// plot y area upper-left corner (x)
-#define	PLOT_Y_Y		200.0				// plot y area upper-left corner (y
-#define	PLOT_Y_MAX		0.5					// max value of data
+#define	PLOT_Y_X		PLOT_X_X
+#define	PLOT_Y_Y		PLOT_X_Y + PLOT_H + 2 * PLOT_MARGIN + PLOT_SPACING
+#define	PLOT_Y_MAX		0.5						// max value of data
 //------------------------------------------------------------------------------
-#define	PLOT_THETA_X	1024.0				// plot theta area upper-left corner (x)
-#define	PLOT_THETA_Y	400.0				// plot theta area upper-left corner (y)
-#define	PLOT_THETA_MAX	0.05				// max value of data
+#define	PLOT_THETA_X	PLOT_X_X
+#define	PLOT_THETA_Y	PLOT_Y_Y + PLOT_H + 2 * PLOT_MARGIN + PLOT_SPACING
+#define	PLOT_THETA_MAX	0.1						// max value of data
 //------------------------------------------------------------------------------
 //	QUADROTOR GRAPHIC CONSTANTS
 //------------------------------------------------------------------------------
-#define	QUAD_HEIGHT		0.07				// height of the quadcopter in m
-#define	F_THS			M * G / 2.0			// force threshold in N
-#define	MAX_F_ARR		0.26				// max length of arrow representing force in m
-#define	FORCE_SCALE		-MAX_F_ARR /(F_THS) // scale factor for force representation
+#define	QUAD_HEIGHT		0.07					// height of the quadcopter in m
+#define	F_THS			(M * G / 2.0)			// force threshold in N
+#define	MAX_F_ARR		0.26					// max length of arrow representing force in m
+#define	FORCE_SCALE		(- MAX_F_ARR / F_THS) 	// scale factor for force representation
 //------------------------------------------------------------------------------
 //	COLOR CONSTANTS
 //------------------------------------------------------------------------------
-#define FILL_COL_R		48					// red channel for fill color
-#define	FILL_COL_G		49					// green channel for fill color
-#define FILL_COL_B		49					// blue channel for fill colo
+#define BG_COL_R		0						// red channel for background color
+#define	BG_COL_G		0						// green channel for background color
+#define BG_COL_B		0						// blue channel for background color
 //------------------------------------------------------------------------------
-#define FRAME_COL_R		119					// red channel for frame color
-#define	FRAME_COL_G		110					// green channel for frame color
-#define FRAME_COL_B		111					// blue channel for frame color
+#define LAYOUT_COL_R  	48						// red channel for layout
+#define LAYOUT_COL_G	49						// green channel for layout
+#define LAYOUT_COL_B	49						// blue channel for layout
 //------------------------------------------------------------------------------
-#define GROUND_COL_R	66					// red channel for frame color
-#define	GROUND_COL_G	76					// green channel for frame color
-#define GROUND_COL_B	68					// blue channel for frame color
+#define SKY_COL_R		0						// red channel for sky color
+#define	SKY_COL_G	   	0						// green channel for sky color
+#define SKY_COL_B		0						// blue channel for sky color
 //------------------------------------------------------------------------------
-#define FORCE_COL_R		255					// red channel for frame color
-#define FORCE_COL_G		0					// green channel for frame color
-#define FORCE_COL_B		0					// blue channel for frame color
+// QUADCOPTER COLOR CONSTANTS
 //------------------------------------------------------------------------------
-#define PLOT_COL1_R		17					// red channel for plot signal # 1
-#define PLOT_COL1_G		150					// green channel for plot signal # 1
-#define PLOT_COL1_B		240					// blue channel for plot signal # 1
+#define FRAME_COL_R		119						// red channel for frame color
+#define	FRAME_COL_G		110						// green channel for frame color
+#define FRAME_COL_B		111						// blue channel for frame color
 //------------------------------------------------------------------------------
-#define PLOT_COL2_R		251					// red channel for plot signal # 2
-#define PLOT_COL2_G		188					// green channel for plot signal # 2
-#define PLOT_COL2_B		5					// blue channel for plot signal # 2
+#define FILL_COL_R		48						// red channel for fill color
+#define	FILL_COL_G		49						// green channel for fill color
+#define FILL_COL_B		49						// blue channel for fill colo
 //------------------------------------------------------------------------------
-#define PLOT_T_AXIS_R  	48					// red channel for plot time axis
-#define PLOT_T_AXIS_G	49					// green channel for plot time axis
-#define PLOT_T_AXIS_B	49					// blue channel for plot time axis
+#define FORCE_COL_R		255						// red channel for force color
+#define FORCE_COL_G		0						// green channel for force color
+#define FORCE_COL_B		0						// blue channel for force color
+//------------------------------------------------------------------------------
+// PLOT COLOR CONSTANTS
+//------------------------------------------------------------------------------
+#define PLOT_COL1_R		17						// red channel for plot signal # 1
+#define PLOT_COL1_G		150						// green channel for plot signal # 1
+#define PLOT_COL1_B		240						// blue channel for plot signal # 1
+//------------------------------------------------------------------------------
+#define PLOT_COL2_R		251						// red channel for plot signal # 2
+#define PLOT_COL2_G		188						// green channel for plot signal # 2
+#define PLOT_COL2_B		5						// blue channel for plot signal # 2
+//------------------------------------------------------------------------------
+#define PLOT_T_AXIS_R  	48						// red channel for plot time axis
+#define PLOT_T_AXIS_G	49						// green channel for plot time axis
+#define PLOT_T_AXIS_B	49						// blue channel for plot time axis
 
 //------------------------------------------------------------------------------
 //	DRAWING FUNCTION
@@ -140,9 +161,11 @@ static
 void	draw_quads(BITMAP* bitmap)
 {
 float	x, y, theta, force_left, force_right;
-int		i;
+int		i, sky_color;
 
-		clear_to_color(bitmap, 0);
+		sky_color = makecol(SKY_COL_R, SKY_COL_G, SKY_COL_B);	
+		clear_to_color(bitmap, sky_color);
+
 		for(i = 0; i < MAX_QUADROTORS; i++) {
 			// Get quadrotor state
 			pthread_mutex_lock(&dynamics_mutex[i]);
@@ -166,8 +189,64 @@ int		i;
 }
 
 //------------------------------------------------------------------------------
+//	Function draw_layout
+//------------------------------------------------------------------------------
+void	draw_layout()
+{
+int		color;
+
+		color = makecol(LAYOUT_COL_R, LAYOUT_COL_G, LAYOUT_COL_B);
+
+		// Draw separators
+		line(screen, FLY_X, FLY_Y + FLY_H + MARGIN,\
+					 FLY_X + FLY_W, FLY_Y + FLY_H + MARGIN, color);
+		line(screen, FLY_X + FLY_W + MARGIN, FLY_Y,
+					 FLY_X + FLY_W + MARGIN, FLY_Y + FLY_H, color);
+		line(screen, FLY_X + FLY_W + 2 * MARGIN, FLY_Y + FLY_H + MARGIN,\
+					 FLY_X + FLY_W + 2 * MARGIN + 2 * PLOT_MARGIN + PLOT_W,\
+					 FLY_Y + FLY_H + MARGIN, color);
+
+		// Draw figure margins
+		rect(screen, PLOT_X_X - PLOT_MARGIN, PLOT_X_Y - PLOT_MARGIN,\
+					 PLOT_X_X + PLOT_W + PLOT_MARGIN, PLOT_X_Y + PLOT_H + PLOT_MARGIN,\
+					 color);	
+		rect(screen, PLOT_Y_X - PLOT_MARGIN, PLOT_Y_Y - PLOT_MARGIN,\
+					 PLOT_Y_X + PLOT_W + PLOT_MARGIN, PLOT_Y_Y + PLOT_H + PLOT_MARGIN,\
+					 color);	
+		rect(screen, PLOT_THETA_X - PLOT_MARGIN, PLOT_THETA_Y - PLOT_MARGIN,\
+					 PLOT_THETA_X + PLOT_W + PLOT_MARGIN, PLOT_THETA_Y + PLOT_H + PLOT_MARGIN,\
+					 color);	
+}
+
+//------------------------------------------------------------------------------
+//	Function draw_title
+//------------------------------------------------------------------------------
+void	draw_title()
+{
+FONT*	font_title;
+PALETTE	palette;
+
+		font_title = load_font("opensans_16.pcx", palette, NULL);
+
+		if (!font_title)
+			printf("Cannot load title font.\n");
+
+		textout_centre_ex(screen, font_title, "2D Quad Simulator",\
+						  WINDOW_W / 2, 5, makecol(255,255,255), -1);
+}
+
+//------------------------------------------------------------------------------
 //	PLOT FUNCTIONS
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function init_plot_data
+//------------------------------------------------------------------------------
+static
+void	init_plot_data(plot_data* plot)
+{
+		plot->index = BUFF_SIZE;
+}
 
 //------------------------------------------------------------------------------
 //	Function plot_add_sample
@@ -212,7 +291,7 @@ float	actual_value, next_value;
 		for(i = plot->index; i < BUFF_SIZE - 1; i++) {
 
 			// Evaluate color with scaled value (hsv)
-			hsv_to_rgb(h, s, v * (float)i / (BUFF_SIZE), &r, &g, &b);
+			hsv_to_rgb(h, s, v * (float)i / BUFF_SIZE, &r, &g, &b);
 			color = makecol(r, g, b);
 
 			// Draw the horizontal line
@@ -244,7 +323,7 @@ void	draw_figure(BITMAP* bitmap, plot_data* signal_1, plot_data* signal_2,\
 }
 
 //------------------------------------------------------------------------------
-//	Function draw_plot_area
+//	Function draw_plot_arean
 //  draws the plot area containing three figures (estimation and tracking error
 //	of x, y and theta for the i-th quadcopter)
 //------------------------------------------------------------------------------
@@ -295,15 +374,6 @@ float	theta, theta_est, theta_traj;
 }
 
 //------------------------------------------------------------------------------
-//	Function init_plot_data
-//------------------------------------------------------------------------------
-static
-void	init_plot_data(plot_data* plot)
-{
-		plot->index = BUFF_SIZE;
-}
-
-//------------------------------------------------------------------------------
 //	TASK CODE
 //------------------------------------------------------------------------------
 
@@ -315,17 +385,18 @@ void*		gui_task(void* arg)
 task_par*	tp;
 BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est, plot_theta_track;
-int			i;
+int			i, bg_color;
 
+			tp = (struct task_par*)arg;
+
+			init_timespecs(tp);
+
+			// Plots initialization
 			i = 0;
 			fly_bitmap = create_bitmap(FLY_W, FLY_H);
 			plot_x_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			plot_y_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			plot_theta_bitmap = create_bitmap(PLOT_W, PLOT_H);
-
-			tp = (struct task_par*)arg;
-
-			init_timespecs(tp);
 
 			init_plot_data(&plot_x_est);
 			init_plot_data(&plot_y_est);
@@ -334,7 +405,14 @@ int			i;
 			init_plot_data(&plot_y_track);
 			init_plot_data(&plot_theta_track);
 
+			// Clear screen and draw layout
+			bg_color = makecol(BG_COL_R, BG_COL_G, BG_COL_B);
+			clear_to_color(screen, bg_color);
+			draw_layout();
+			draw_title();
+
 			while(1) {
+
 				// Draw quadrotors
 				draw_quads(fly_bitmap);
 

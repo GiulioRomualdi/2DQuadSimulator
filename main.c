@@ -95,7 +95,7 @@ int		i, error;
 		// allegro
 		allegro_init();
 		set_color_depth(32);
-		set_gfx_mode(GFX_AUTODETECT_WINDOWED, 1324, 600, 0, 0);
+		set_gfx_mode(GFX_AUTODETECT_WINDOWED, WINDOW_W, WINDOW_H, 0, 0);
 
 		// random number generation
 		init_random_generator();
