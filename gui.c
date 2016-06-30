@@ -19,12 +19,12 @@
 #define FLY_W			960.0					// flying area width in pixel
 #define FLY_H			540.0					// flying area heigth in pixel
 #define	FLY_X			30.0					// flying area upper-left corner (x)
-#define	FLY_Y			30.0					// flying area upper-left corner (y)
+#define	FLY_Y			60.0					// flying area upper-left corner (y)
 #define	FLY_SCALING		(FLY_W / WORLD_W)		// scale factor
 //------------------------------------------------------------------------------
 //	PLOT AREA CONSTANTS
 //-----------------------------------------------------------------------------
-#define	PLOT_TOP_MARGIN	FLY_Y + 25				// top margin of plot area in pixel	
+#define	PLOT_TOP_MARGIN	FLY_Y					// top margin of plot area in pixel	
 #define	PLOT_MARGIN		1.0						// inner plot margin in pixel
 #define	PLOT_SPACING	10.0					// spacing between consecutive plots in pixel
 //-----------------------------------------------------------------------------
@@ -227,7 +227,7 @@ int		color;
 //------------------------------------------------------------------------------
 void	draw_titles()
 {
-FONT	*font_title, *font_plot;
+FONT	*font_title, *font_subtitles;
 PALETTE	palette;
 int		title_col;
 
@@ -235,16 +235,17 @@ int		title_col;
 		if (!font_title)
 			printf("Cannot load title font.\n");
 
-		font_plot = load_font("opensans_11.pcx", palette, NULL);
-		if (!font_plot)
+		font_subtitles = load_font("opensans_11.pcx", palette, NULL);
+		if (!font_subtitles)
 			printf("Cannot load plot font.\n");
 
 		title_col = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
 		textout_centre_ex(screen, font_title, "2D Quad Simulator",\
 						  WINDOW_W / 2, 5, title_col, -1);
-		textout_centre_ex(screen, font_title, "errors",\
-						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 30, title_col, -1);
-
+		textout_centre_ex(screen, font_subtitles, "errors",\
+						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 20, title_col, -1);
+		textout_centre_ex(screen, font_subtitles, "view",\
+						  FLY_X + FLY_W / 2, FLY_Y - 20, title_col, -1);
 }
 
 //------------------------------------------------------------------------------
