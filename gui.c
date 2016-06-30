@@ -65,6 +65,10 @@
 #define	SKY_COL_G	   	0						// green channel for sky color
 #define SKY_COL_B		0						// blue channel for sky color
 //------------------------------------------------------------------------------
+#define TEXT_COL_R  	180						// red channel for text
+#define TEXT_COL_G		180						// green channel for text
+#define TEXT_COL_B		180						// blue channel for text
+//------------------------------------------------------------------------------
 // QUADCOPTER COLOR CONSTANTS
 //------------------------------------------------------------------------------
 #define FRAME_COL_R		119						// red channel for frame color
@@ -163,7 +167,7 @@ void	draw_quads(BITMAP* bitmap)
 float	x, y, theta, force_left, force_right;
 int		i, sky_color;
 
-		sky_color = makecol(SKY_COL_R, SKY_COL_G, SKY_COL_B);	
+		sky_color = makecol(SKY_COL_R, SKY_COL_G, SKY_COL_B);
 		clear_to_color(bitmap, sky_color);
 
 		for(i = 0; i < MAX_QUADROTORS; i++) {
@@ -209,30 +213,73 @@ int		color;
 		// Draw figure margins
 		rect(screen, PLOT_X_X - PLOT_MARGIN, PLOT_X_Y - PLOT_MARGIN,\
 					 PLOT_X_X + PLOT_W + PLOT_MARGIN, PLOT_X_Y + PLOT_H + PLOT_MARGIN,\
-					 color);	
+					 color);
 		rect(screen, PLOT_Y_X - PLOT_MARGIN, PLOT_Y_Y - PLOT_MARGIN,\
 					 PLOT_Y_X + PLOT_W + PLOT_MARGIN, PLOT_Y_Y + PLOT_H + PLOT_MARGIN,\
-					 color);	
+					 color);
 		rect(screen, PLOT_THETA_X - PLOT_MARGIN, PLOT_THETA_Y - PLOT_MARGIN,\
 					 PLOT_THETA_X + PLOT_W + PLOT_MARGIN, PLOT_THETA_Y + PLOT_H + PLOT_MARGIN,\
-					 color);	
+					 color);
 }
 
 //------------------------------------------------------------------------------
-//	Function draw_title
+//	Function draw_titles
 //------------------------------------------------------------------------------
-void	draw_title()
+void	draw_titles()
 {
-FONT*	font_title;
+FONT	*font_title, *font_plot;
 PALETTE	palette;
+int		title_col;
 
 		font_title = load_font("opensans_16.pcx", palette, NULL);
-
 		if (!font_title)
 			printf("Cannot load title font.\n");
 
+		font_plot = load_font("opensans_11.pcx", palette, NULL);
+		if (!font_plot)
+			printf("Cannot load plot font.\n");
+
+		title_col = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
 		textout_centre_ex(screen, font_title, "2D Quad Simulator",\
-						  WINDOW_W / 2, 5, makecol(255,255,255), -1);
+						  WINDOW_W / 2, 5, title_col, -1);
+		textout_centre_ex(screen, font_title, "errors",\
+						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 30, title_col, -1);
+
+}
+
+//------------------------------------------------------------------------------
+//	Function draw_plot_legend
+//------------------------------------------------------------------------------
+void	draw_plot_legend()
+{
+FONT*	font_legend;
+PALETTE	palette;
+int		legend_col, tracking_error_col, estimation_error_col;
+int		second_word_length;
+
+		// Load font
+		font_legend = load_font("opensans_10.pcx", palette, NULL);
+		if (!font_legend)
+			printf("Cannot load legend font.\n");
+
+		// Set colors
+ 		legend_col = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
+	   	estimation_error_col = makecol(PLOT_COL1_R, PLOT_COL1_G, PLOT_COL1_B);
+		tracking_error_col = makecol(PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
+
+		// Print texts
+		textout_ex(screen, font_legend, "legend:",\
+				   PLOT_X_X - PLOT_MARGIN,\
+				   PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, legend_col, -1);
+
+		textout_right_ex(screen, font_legend, "estimation err",\
+				   		 PLOT_X_X + PLOT_W + PLOT_MARGIN,\
+				   		 PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, estimation_error_col, -1);
+
+	 	second_word_length = text_length(font_legend, "estimation err ");
+		textout_right_ex(screen, font_legend, "tracking err",\
+				   PLOT_X_X + PLOT_W + PLOT_MARGIN - second_word_length, \
+				   PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, tracking_error_col, -1);
 }
 
 //------------------------------------------------------------------------------
@@ -409,7 +456,8 @@ int			i, bg_color;
 			bg_color = makecol(BG_COL_R, BG_COL_G, BG_COL_B);
 			clear_to_color(screen, bg_color);
 			draw_layout();
-			draw_title();
+			draw_titles();
+			draw_plot_legend();
 
 			while(1) {
 
