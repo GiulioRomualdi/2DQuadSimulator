@@ -8,7 +8,7 @@
 #define	M					1.0				// quadcopter mass in Kg
 #define IZ					(M * L * L /12)	// moment of inertia around axis x
 #define G					9.81			// gravitational acceleration in m/s^2
-#define MAX_QUADROTORS		5	   			// max number of quadrotor
+#define MAX_QUADROTORS		1	   			// max number of quadrotor
 
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
@@ -64,6 +64,7 @@ struct	force {
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------
 extern struct state states[MAX_QUADROTORS];
+extern struct state	desired_trajectories[MAX_QUADROTORS];
 extern struct kalman_state kalman_states[MAX_QUADROTORS];
 extern struct trajectory_state traj_states[MAX_QUADROTORS];
 extern struct force forces[MAX_QUADROTORS];

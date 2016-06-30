@@ -24,8 +24,8 @@
 #define VY0_STD			1.0 / 3.0			// std of vy0
 #define THETA0_STD		0.6 / 3.0			// std of theta0
 #define VTHETA0_STD		0.0					// std of vtheta0
-#define	WIND_X_STD 		1.0					// std of the force due to wind along x
-#define WIND_Y_STD		1.0					// std of the force due to wind along y
+#define	WIND_X_STD 		0.5					// std of the force due to wind along x
+#define WIND_Y_STD		0.5					// std of the force due to wind along y
 #define NOISE_X_STD		1.0 / 3.0			// std of x measurament noise
 #define NOISE_Y_STD		1.0 / 3.0			// std of y measurament noise
 #define NOISE_THETA_STD	0.6 / 3.0			// std of theta measurament noise
@@ -47,6 +47,7 @@ float K_LQ[2][6] = {{-1.5295, -2.2586, -15.1509, -15.7189, 8.7459, 1.6575},
 //	GLOABAL DATA STRUCTURES DEFINITIONS
 //------------------------------------------------------------------------------
 struct state states[MAX_QUADROTORS];
+struct state desired_trajectories[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
 struct trajectory_state traj_states[MAX_QUADROTORS];
 struct force forces[MAX_QUADROTORS];
@@ -803,6 +804,10 @@ state	reference_trajectory, estimate, state;
 			forces[tp->id].force_left = real_input[0];
 			forces[tp->id].force_right = real_input[1];
 			pthread_mutex_unlock(&force_mutex[tp->id]);
+
+   			pthread_mutex_lock(&desired_traj_mutex[tp->id]);
+			desired_trajectories[tp->id] = reference_trajectory;
+			pthread_mutex_unlock(&desired_traj_mutex[tp->id]);
 
 			// Handle thread parameters
 			if(deadline_miss(tp))

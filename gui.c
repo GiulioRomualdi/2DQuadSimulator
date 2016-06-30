@@ -60,13 +60,17 @@
 #define FORCE_COL_G		0					// green channel for frame color
 #define FORCE_COL_B		0					// blue channel for frame color
 //------------------------------------------------------------------------------
-#define PLOT_COL1_R		66					// red channel for plot signal # 1
-#define PLOT_COL1_G		133					// green channel for plot signal # 1
-#define PLOT_COL1_B		244					// blue channel for plot signal # 1
+#define PLOT_COL1_R		17					// red channel for plot signal # 1
+#define PLOT_COL1_G		150					// green channel for plot signal # 1
+#define PLOT_COL1_B		240					// blue channel for plot signal # 1
 //------------------------------------------------------------------------------
 #define PLOT_COL2_R		251					// red channel for plot signal # 2
 #define PLOT_COL2_G		188					// green channel for plot signal # 2
 #define PLOT_COL2_B		5					// blue channel for plot signal # 2
+//------------------------------------------------------------------------------
+#define PLOT_T_AXIS_R  	48					// red channel for plot time axis
+#define PLOT_T_AXIS_G	49					// green channel for plot time axis
+#define PLOT_T_AXIS_B	49					// blue channel for plot time axis
 
 //------------------------------------------------------------------------------
 //	DRAWING FUNCTION
@@ -200,6 +204,10 @@ float	actual_value, next_value;
 		// Evaluate main color of the plot
 		rgb_to_hsv(color_r, color_g, color_b, &h, &s, &v);
 
+		// Draw y = 0 axis
+		line(bitmap, 0, PLOT_H / 2, PLOT_W, PLOT_H / 2,\
+			 makecol(PLOT_T_AXIS_R, PLOT_T_AXIS_G, PLOT_T_AXIS_B));
+
 		// Plot the signal
 		for(i = plot->index; i < BUFF_SIZE - 1; i++) {
 
@@ -217,9 +225,6 @@ float	actual_value, next_value;
 			line(bitmap, (i + 1) * PLOT_SCALE_X, actual_value, (i + 1) * PLOT_SCALE_X,\
 				 next_value, color);
 		}
-
-		// Draw y = 0 axis
-		line(bitmap, 0, PLOT_H / 2, PLOT_W, PLOT_H / 2, makecol(255, 255, 255));
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +238,7 @@ void	draw_figure(BITMAP* bitmap, plot_data* signal_1, plot_data* signal_2,\
 		clear_to_color(bitmap, 0);
 
 		plot_signal(bitmap, signal_1, max_value, PLOT_COL1_R, PLOT_COL1_G, PLOT_COL1_B);
-		//plot_signal(bitmap, signal_2, max_value, PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
+		plot_signal(bitmap, signal_2, max_value, PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
 
 		blit(bitmap, screen, 0, 0, upper_left_x, upper_left_y, PLOT_W, PLOT_H);
 }
@@ -249,9 +254,9 @@ void	draw_plot_area(BITMAP* bitmap_x, BITMAP* bitmap_y, BITMAP* bitmap_theta,\
 					   plot_data* plot_y_est, plot_data* plot_y_track,\
 					   plot_data* plot_theta_est, plot_data* plot_theta_track, int i)
 {
-float	x, x_est; //x_traj
-float	y, y_est; //y_traj
-float	theta, theta_est; //theta_traj;
+float	x, x_est, x_traj;
+float	y, y_est, y_traj;
+float	theta, theta_est, theta_traj;
 
 	 	pthread_mutex_lock(&dynamics_mutex[i]);
 		x = states[i].x;
@@ -265,14 +270,20 @@ float	theta, theta_est; //theta_traj;
 		theta_est = kalman_states[i].estimate.theta;
 		pthread_mutex_unlock(&kalman_mutex[i]);
 
+		pthread_mutex_lock(&desired_traj_mutex[i]);
+		x_traj = desired_trajectories[i].x;
+		y_traj = desired_trajectories[i].y;
+		theta_traj = desired_trajectories[i].theta;
+		pthread_mutex_unlock(&desired_traj_mutex[i]);
+
 		plot_add_sample(plot_x_est, x - x_est);
-		plot_add_sample(plot_x_track, x - x_est);
+		plot_add_sample(plot_x_track, x - x_traj);
 
 		plot_add_sample(plot_y_est, y - y_est);
-		plot_add_sample(plot_y_track, y - y_est);
+		plot_add_sample(plot_y_track, y - y_traj);
 
 		plot_add_sample(plot_theta_est, theta - theta_est);
-		plot_add_sample(plot_theta_track, theta - theta_est);
+		plot_add_sample(plot_theta_track, theta - theta_traj);
 
 		draw_figure(bitmap_x, plot_x_est, plot_x_track, PLOT_X_MAX,\
 					PLOT_X_X, PLOT_X_Y);
@@ -306,7 +317,7 @@ BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est, plot_theta_track;
 int			i;
 
-			i = 1;
+			i = 0;
 			fly_bitmap = create_bitmap(FLY_W, FLY_H);
 			plot_x_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			plot_y_bitmap = create_bitmap(PLOT_W, PLOT_H);
