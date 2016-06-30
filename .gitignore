@@ -43,3 +43,4 @@ tramp
 
 # Compiler output
 quadrotors
+*.d
