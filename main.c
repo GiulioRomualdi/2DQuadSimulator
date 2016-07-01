@@ -15,15 +15,6 @@
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
-task_par 		regulator_tp[MAX_QUADROTORS];
-pthread_t 		regulator_tid[MAX_QUADROTORS];
-pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
-task_par 		guidance_tp[MAX_QUADROTORS];
-pthread_t		guidance_tid[MAX_QUADROTORS];
-pthread_attr_t	guidance_attr[MAX_QUADROTORS];
-task_par		gui_tp[1];
-pthread_t		gui_tid[1];
-pthread_attr_t	gui_attr[1];
 
 //------------------------------------------------------------------------------
 //	Function create_task
@@ -44,8 +35,9 @@ int 	error;
 			tp[i].period = period;
 			tp[i].deadline = deadline;
 			tp[i].dmiss = 0;
-			snprintf(tp[i].task_name, 10, "%s %d", task_name, i);
+			strcpy(tp[i].task_name, task_name);
 			pthread_mutex_init(&tp[i].mutex, NULL);
+			zero_wcet(&(tp[i]));
 
 			error = pthread_attr_init(&attr[i]);
 			if (error != 0) {
@@ -62,6 +54,9 @@ int 	error;
 		return 0;
 }
 
+//------------------------------------------------------------------------------
+//	Function wait_for_task_end
+//------------------------------------------------------------------------------
 int		wait_for_task_end()
 {
 int 	i, error;
