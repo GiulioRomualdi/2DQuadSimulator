@@ -9,14 +9,17 @@
 //	DATA STRUCTURES DECLARATIONS
 //------------------------------------------------------------------------------
 struct	task_par {								// task parameters
+		char				task_name[20];		// task name
 		int					id;					// task id
-		long				wcet;				// in microseconds
 		int					period;				// in milliseconds
 		int					deadline;			// relative in milliseconds
 		int					priority;			// in [0, 99]
 		int 				dmiss;				// no. of misses
 		struct	timespec 	activation_time;	// next activation time
 		struct	timespec	abs_deadline;		// absolute
+		struct	timespec 	start_time;			// task current start time
+		struct	timespec	finish_time;		// task current finish time
+		struct	timespec	wcet;				// worst case execution time
 		pthread_mutex_t		mutex;				// mutex
 };
 typedef struct task_par task_par;
@@ -58,13 +61,21 @@ float	get_uniform_generic(float a, float b);
 float	get_gaussian(float std);
 
 //-----------------------------------------------------------------------------
+//	TIMESPEC HANDLING
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
 //	THREAD MANAGEMENT
 //-----------------------------------------------------------------------------
-void	init_timespecs(struct task_par* tp);
-void	update_activation_time(struct task_par* tp);
-void	update_abs_deadline(struct task_par* tp);
-void	wait_for_period(struct task_par* tp);
-int		deadline_miss(struct task_par* tp);
+void	init_timespecs(task_par* tp);
+void	set_start_time(task_par* tp);
+void	set_finish_time(task_par* tp);
+void	zero_wcet(task_par* tp);
+void	update_activation_time(task_par* tp);
+void	update_abs_deadline(task_par* tp);
+void	update_wcet(task_par* tp);
+void	wait_for_period(task_par* tp);
+int		deadline_miss(task_par* tp);
 void	mutex_init();
 
 #endif

@@ -333,8 +333,19 @@ float	sample;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+//	Function time_zero
+//	set a timespec so that it represents the time zero
+//------------------------------------------------------------------------------
+static
+void	time_zero(struct timespec *time)
+{
+		time->tv_sec = 0;
+		time->tv_nsec = 0;
+}
+
+//------------------------------------------------------------------------------
 //	Function time_copy
-//	copies a source timespec 't_source' in a destination timespec pointed by 
+//	copies a source timespec 't_source' in a destination timespec pointed by
 //	't_dest'
 //------------------------------------------------------------------------------
 static
@@ -359,6 +370,28 @@ void	time_add_delta(struct timespec* time, int delta)
 			time->tv_nsec -= 1000000000;
 			time->tv_sec += 1;
 		}
+}
+
+//------------------------------------------------------------------------------
+//	Function time_diff
+//	evaluates the difference between two time variables represented by
+//	two timespec 't1' and 't2'
+//	returns the difference as a timespec
+//------------------------------------------------------------------------------
+static
+struct timespec	time_diff(struct timespec* t1, struct timespec* t2)
+{
+struct timespec	diff;
+
+				diff.tv_sec = t1->tv_sec - t2->tv_sec;
+				diff.tv_nsec = t1->tv_sec - t2->tv_sec;
+
+				if (diff.tv_nsec < 0) {
+					diff.tv_sec -= 1;
+					diff.tv_nsec += 1000000000;
+				}
+
+				return diff;
 }
 
 //------------------------------------------------------------------------------
@@ -464,4 +497,51 @@ struct timespec current_time;
 		}
 
 		return 0;
+}
+
+//-----------------------------------------------------------------------------
+//	Function set_start_time
+//	set the start time of the task
+//-----------------------------------------------------------------------------
+void	set_start_time(struct task_par* tp)
+{
+struct timespec time;
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		time_copy(time, &(tp->start_time));
+}
+
+//-----------------------------------------------------------------------------
+//	Function set_finish_time
+//	set the start time of the task
+//-----------------------------------------------------------------------------
+void	set_finish_time(struct task_par* tp)
+{
+struct timespec time;
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		time_copy(time, &(tp->finish_time));
+}
+
+//-----------------------------------------------------------------------------
+//	Function zero_wcet
+//	set the wcet to zero
+//-----------------------------------------------------------------------------
+void	zero_wcet(struct task_par* tp)
+{
+		time_zero(&(tp->wcet));
+}
+
+//-----------------------------------------------------------------------------
+//	Function update_wcet
+//	update the worst case execution time of the task
+//-----------------------------------------------------------------------------
+void	update_wcet(struct task_par* tp)
+{
+struct timespec diff;
+
+		diff = time_diff(&(tp->finish_time), &(tp->start_time));
+		if (time_cmp(diff, tp->wcet)== 1)
+			time_copy(diff, &(tp->wcet));
+
 }
