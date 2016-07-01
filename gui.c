@@ -236,10 +236,19 @@ static
 void	draw_quads(BITMAP* bitmap)
 {
 float	x, y, theta, force_left, force_right;
-int		i, sky_color;
+int		i, sky_color, legend_color, selected_quad;
 
 		sky_color = makecol(SKY_COL_R, SKY_COL_G, SKY_COL_B);
+ 		legend_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
+
 		clear_to_color(bitmap, sky_color);
+
+		selected_quad = get_selected_quad();
+
+		// Print texts
+		textprintf_right_ex(bitmap, font_10, FLY_W, FLY_H - MARGIN,
+							legend_color, -1,
+							"Quadrotor: %d", selected_quad);
 
 		for(i = 0; i < MAX_QUADROTORS; i++) {
 			// Get quadrotor state
