@@ -50,7 +50,14 @@
 #define LOG_H			100.0					// log area heigth in pixel
 #define	LOG_X			30.0					// log area upper-left corner (x)
 #define	LOG_Y			FLY_Y + FLY_H + 2 * MARGIN + 5	// log area upper-left corner (y)
-#define	LOG_SPACING		250						// spacing between log widgets
+#define	LOG_SPACING		400						// spacing between log widgets
+//------------------------------------------------------------------------------
+//	PERFORMANCE GUIDANCE AREA
+//------------------------------------------------------------------------------
+#define GUIDANCE_W		270.0					// guidance area width in pixel
+#define GUIDANCE_H		100.0					// guidance area heigth in pixel
+#define	GUIDANCE_X		PLOT_X_X				// guidance area upper-left corner (x)
+#define	GUIDANCE_Y		FLY_Y + FLY_H + 2 * MARGIN + 5	// guidance area upper-left corner (y)
 //------------------------------------------------------------------------------
 //	QUADROTOR GRAPHIC CONSTANTS
 //------------------------------------------------------------------------------
@@ -420,6 +427,9 @@ int		title_color;
 						  FLY_X + FLY_W / 2, FLY_Y - 25, title_color, -1);
 		textout_centre_ex(screen, font_12, "realtime peformance",\
 						  FLY_X + FLY_W / 2, FLY_Y + FLY_H + MARGIN + 10, title_color, -1);
+		textout_centre_ex(screen, font_12, "guidance",\
+						  PLOT_X_X + PLOT_W / 2, FLY_Y + FLY_H + MARGIN + 10, title_color, -1);
+
 }
 
 //------------------------------------------------------------------------------
@@ -503,6 +513,47 @@ int		i;
 		blit(bitmap, screen, 0, 0, LOG_X, LOG_Y, LOG_W, LOG_H);
 }
 
+//------------------------------------------------------------------------------
+//	Function print_guidance_info
+//	print the guidance label
+//------------------------------------------------------------------------------
+static
+void	print_guidance_info(BITMAP* bitmap)
+{
+int		i, text_color, height;
+float	x, y, xf, yf, tof;
+
+		i = get_selected_quad();
+
+		clear_to_color(bitmap, 0);
+
+		// Set color
+		text_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
+
+		// Evaluate text_width and text_height
+		height = text_height(font_11);
+
+		pthread_mutex_lock(&dynamics_mutex[i]);
+		x = states[i].x;
+		y = states[i].y;
+		pthread_mutex_unlock(&dynamics_mutex[i]);
+
+		pthread_mutex_lock(&guidance_mutex[i]);
+		xf = traj_states[i].xf;
+		yf = traj_states[i].yf;
+		tof = traj_states[i].final_time;
+		pthread_mutex_unlock(&guidance_mutex[i]);
+
+		textprintf_ex(bitmap, font_10, 0, 0, text_color, -1, "Active:");
+		textprintf_ex(bitmap, font_10, 0, height, text_color, -1,\
+					  "Next target: (%.2f, %.2f) m", xf, yf);
+		textprintf_ex(bitmap, font_10, 0, 2 * height, text_color, -1,\
+  					  "State : (%.2f, %.2f) m", x, y);
+		textprintf_ex(bitmap, font_10, 0, 3 * height, text_color, -1,\
+  					  "Time of flight: %.2f s", tof);
+
+		blit(bitmap, screen, 0, 0, GUIDANCE_X, GUIDANCE_Y, GUIDANCE_W, GUIDANCE_H);
+}
 
 //------------------------------------------------------------------------------
 //	TASK CODE
@@ -533,7 +584,8 @@ FONT	**fonts[4] = {&font_16, &font_12, &font_11, &font_10};
 void*		gui_task(void* arg)
 {
 task_par*	tp;
-BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap, *log_bitmap;
+BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap;
+BITMAP		*plot_theta_bitmap, *log_bitmap, *guidance_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est, plot_theta_track;
 int			bg_color;
 
@@ -547,6 +599,7 @@ int			bg_color;
 			plot_y_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			plot_theta_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			log_bitmap = create_bitmap(LOG_W, LOG_H);
+			guidance_bitmap = create_bitmap(GUIDANCE_W, GUIDANCE_H);
 
 			init_plot_data(&plot_x_est);
 			init_plot_data(&plot_y_est);
@@ -574,7 +627,11 @@ int			bg_color;
 							   &plot_y_est, &plot_y_track,\
 							   &plot_theta_est, &plot_theta_track);
 
+				// Print performance label
 				print_performace_info(log_bitmap);
+
+				// Print guidance label
+				print_guidance_info(guidance_bitmap);
 
 				// Handle thread parameters
 				set_finish_time(tp);
