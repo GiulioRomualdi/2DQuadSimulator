@@ -774,6 +774,8 @@ state	reference_trajectory, estimate, state;
 		init_ekf_matrix(tp->id, period);
 
 		while(1) {
+			set_start_time(tp);
+
 			// Recover the last evaluated state
    			pthread_mutex_lock(&dynamics_mutex[tp->id]);
 			state = states[tp->id];
@@ -812,8 +814,9 @@ state	reference_trajectory, estimate, state;
 			pthread_mutex_unlock(&desired_traj_mutex[tp->id]);
 
 			// Handle thread parameters
-			if(deadline_miss(tp))
-				printf("%d\n", tp->dmiss);
+			set_finish_time(tp);
+			update_wcet(tp);
+			deadline_miss(tp);
 			wait_for_period(tp);
 			update_activation_time(tp);
 			update_abs_deadline(tp);
@@ -833,6 +836,8 @@ float	current_time, final_time, tf;
 		init_timespecs(tp);
 
 		while(1) {
+
+			set_start_time(tp);
 
 			// Get the current and final time of the trajectory
 			pthread_mutex_lock(&guidance_mutex[tp->id]);
@@ -873,6 +878,8 @@ float	current_time, final_time, tf;
 			}
 
 			// Handle thread parameters
+			set_finish_time(tp);
+			update_wcet(tp);
 			deadline_miss(tp);
 			wait_for_period(tp);
 			update_activation_time(tp);
