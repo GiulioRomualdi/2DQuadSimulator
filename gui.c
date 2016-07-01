@@ -623,12 +623,12 @@ void	get_user_command()
 		readkey();
 		if(key[KEY_P]) {
 			pthread_mutex_lock(&(selected_quad.mutex));
-			selected_quad.index = (selected_quad.index - 1) % MAX_QUADROTORS;
+			selected_quad.index = modulo(selected_quad.index - 1, MAX_QUADROTORS);
 			pthread_mutex_unlock(&(selected_quad.mutex));
 		}
 		else if(key[KEY_N]) {
 			pthread_mutex_lock(&(selected_quad.mutex));
-			selected_quad.index = (selected_quad.index + 1) % MAX_QUADROTORS;
+			selected_quad.index = modulo(selected_quad.index + 1, MAX_QUADROTORS);
 			pthread_mutex_unlock(&(selected_quad.mutex));
 		}
 		else if(key[KEY_Q])
