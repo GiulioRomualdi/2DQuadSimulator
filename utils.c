@@ -17,6 +17,15 @@
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
+task_par 		regulator_tp[MAX_QUADROTORS];
+pthread_t 		regulator_tid[MAX_QUADROTORS];
+pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
+task_par 		guidance_tp[MAX_QUADROTORS];
+pthread_t		guidance_tid[MAX_QUADROTORS];
+pthread_attr_t	guidance_attr[MAX_QUADROTORS];
+task_par		gui_tp[1];
+pthread_t		gui_tid[1];
+pthread_attr_t	gui_attr[1];
 //	Mutex required for mutual exclusion
 pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
 pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
@@ -333,6 +342,15 @@ float	sample;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+//	Function time_to_ms
+//	Returns the time represented by the timespec time in milliseconds
+//------------------------------------------------------------------------------
+float	time_to_ms(struct timespec *time)
+{
+		return time->tv_sec * 1000 + (float)time->tv_nsec / 1000000;
+}
+
+//------------------------------------------------------------------------------
 //	Function time_zero
 //	set a timespec so that it represents the time zero
 //------------------------------------------------------------------------------
@@ -384,7 +402,7 @@ struct timespec	time_diff(struct timespec* t1, struct timespec* t2)
 struct timespec	diff;
 
 				diff.tv_sec = t1->tv_sec - t2->tv_sec;
-				diff.tv_nsec = t1->tv_sec - t2->tv_sec;
+				diff.tv_nsec = t1->tv_nsec - t2->tv_nsec;
 
 				if (diff.tv_nsec < 0) {
 					diff.tv_sec -= 1;
@@ -400,15 +418,15 @@ struct timespec	diff;
 //	and returns 0 if they are equal, 1 if 't1' > 't2', -1 if 't1' < 't2'
 //------------------------------------------------------------------------------
 static
-int		time_cmp(struct timespec t1, struct timespec t2)
+int		time_cmp(struct timespec* t1, struct timespec* t2)
 {
-		if(t1.tv_sec > t2.tv_sec)
+		if(t1->tv_sec > t2->tv_sec)
 			return 1;
-		if(t1.tv_sec < t2.tv_sec)
+		if(t1->tv_sec < t2->tv_sec)
 			return -1;
-		if(t1.tv_nsec > t2.tv_nsec)
+		if(t1->tv_nsec > t2->tv_nsec)
 			return 1;
-		if(t1.tv_nsec < t2.tv_nsec)
+		if(t1->tv_nsec < t2->tv_nsec)
 			return -1;
 		return 0;
 }
@@ -491,8 +509,10 @@ struct timespec current_time;
 
 		clock_gettime(CLOCK_MONOTONIC, &current_time);
 
-		if(time_cmp(current_time, tp->abs_deadline) > 0) {
+		if(time_cmp(&current_time, &(tp->abs_deadline)) > 0) {
+			pthread_mutex_lock(&(tp->mutex));
 			tp->dmiss++;
+			pthread_mutex_unlock(&(tp->mutex));
 			return 1;
 		}
 
@@ -541,7 +561,11 @@ void	update_wcet(struct task_par* tp)
 struct timespec diff;
 
 		diff = time_diff(&(tp->finish_time), &(tp->start_time));
-		if (time_cmp(diff, tp->wcet)== 1)
+
+		pthread_mutex_lock(&(tp->mutex));
+
+		if (time_cmp(&diff, &(tp->wcet))== 1)
 			time_copy(diff, &(tp->wcet));
 
+		pthread_mutex_unlock(&(tp->mutex));
 }

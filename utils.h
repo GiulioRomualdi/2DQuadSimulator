@@ -27,11 +27,33 @@ typedef struct task_par task_par;
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------
-extern pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
-extern pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
-extern pthread_mutex_t kalman_mutex[MAX_QUADROTORS];
-extern pthread_mutex_t force_mutex[MAX_QUADROTORS];
-extern pthread_mutex_t desired_traj_mutex[MAX_QUADROTORS];
+
+//------------------------------------------------------------------------------
+//	TASK REGULATOR
+//------------------------------------------------------------------------------
+extern task_par 		regulator_tp[MAX_QUADROTORS];
+extern pthread_t 		regulator_tid[MAX_QUADROTORS];
+extern pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
+//------------------------------------------------------------------------------
+//	TASK GUIDANCE
+//------------------------------------------------------------------------------
+extern task_par 		guidance_tp[MAX_QUADROTORS];
+extern pthread_t		guidance_tid[MAX_QUADROTORS];
+extern pthread_attr_t	guidance_attr[MAX_QUADROTORS];
+//------------------------------------------------------------------------------
+//	TASK GUI
+//------------------------------------------------------------------------------
+extern task_par			gui_tp[1];
+extern pthread_t		gui_tid[1];
+extern pthread_attr_t	gui_attr[1];
+//------------------------------------------------------------------------------
+//	MUTEX
+//------------------------------------------------------------------------------
+extern pthread_mutex_t 	guidance_mutex[MAX_QUADROTORS];
+extern pthread_mutex_t 	dynamics_mutex[MAX_QUADROTORS];
+extern pthread_mutex_t 	kalman_mutex[MAX_QUADROTORS];
+extern pthread_mutex_t 	force_mutex[MAX_QUADROTORS];
+extern pthread_mutex_t 	desired_traj_mutex[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
@@ -63,6 +85,7 @@ float	get_gaussian(float std);
 //-----------------------------------------------------------------------------
 //	TIMESPEC HANDLING
 //-----------------------------------------------------------------------------
+float	time_to_ms(struct timespec* time);
 
 //-----------------------------------------------------------------------------
 //	THREAD MANAGEMENT
