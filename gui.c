@@ -44,12 +44,13 @@
 #define	PLOT_THETA_Y	PLOT_Y_Y + PLOT_H + 2 * PLOT_MARGIN + PLOT_SPACING
 #define	PLOT_THETA_MAX	0.1						// max value of data
 //------------------------------------------------------------------------------
-//	FLYING AREA CONSTANTS
+//	PERFORMANCE LOG AREA
 //------------------------------------------------------------------------------
 #define LOG_W			960.0					// log area width in pixel
 #define LOG_H			100.0					// log area heigth in pixel
 #define	LOG_X			30.0					// log area upper-left corner (x)
 #define	LOG_Y			FLY_Y + FLY_H + 2 * MARGIN + 5	// log area upper-left corner (y)
+#define	LOG_SPACING		250						// spacing between log widgets
 //------------------------------------------------------------------------------
 //	QUADROTOR GRAPHIC CONSTANTS
 //------------------------------------------------------------------------------
@@ -251,11 +252,13 @@ int		color;
 		// Draw separators
 		line(screen, FLY_X, FLY_Y + FLY_H + MARGIN,\
 					 FLY_X + FLY_W, FLY_Y + FLY_H + MARGIN, color);
-		line(screen, FLY_X + FLY_W + MARGIN, FLY_Y,
+		line(screen, FLY_X + FLY_W + MARGIN, MARGIN,
 					 FLY_X + FLY_W + MARGIN, FLY_Y + FLY_H, color);
 		line(screen, FLY_X + FLY_W + 2 * MARGIN, FLY_Y + FLY_H + MARGIN,\
 					 FLY_X + FLY_W + 2 * MARGIN + 2 * PLOT_MARGIN + PLOT_W,\
 					 FLY_Y + FLY_H + MARGIN, color);
+		line(screen, FLY_X + FLY_W + MARGIN, FLY_Y + FLY_H + 2 * MARGIN,
+		 			 FLY_X + FLY_W + MARGIN, WINDOW_H - MARGIN, color);
 
 		// Draw figure margins
 		rect(screen, PLOT_X_X - PLOT_MARGIN, PLOT_X_Y - PLOT_MARGIN,\
@@ -433,10 +436,10 @@ int		second_word_length;
 //	the label is drawn at ('x', 'y')
 //------------------------------------------------------------------------------
 static
-void   	print_performace_label(BITMAP* bitmap, int x, int y)
-							   //task_par* tp)
+void   	print_performace_label(BITMAP* bitmap, int x, int y, task_par* tp)
 {
-int 	height, text_color;
+int 	height, text_color, deadline_miss;
+float	wcet;
 
 		// Set color
 		text_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
@@ -444,12 +447,18 @@ int 	height, text_color;
 		// Evaluate text_width and text_height
 		height = text_height(font_11);
 
-		// pthread_mutex_lock(tp->mutex);
-		textprintf_ex(bitmap, font_11, x, y, text_color, -1, "TASKNAME");
-		textprintf_ex(bitmap, font_10, x, y + height, text_color, -1, "period: ");
-		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1, "wcet: ");
-		textprintf_ex(bitmap, font_10, x, y + 3 * height, text_color, -1, "deadline miss: ");
-		// pthread_mutex_unlock(tp->mutex);
+		pthread_mutex_lock(&(tp->mutex));
+		deadline_miss = tp->dmiss;
+		wcet = time_to_ms(&(tp->wcet));
+		pthread_mutex_unlock(&(tp->mutex));
+
+		textprintf_ex(bitmap, font_11, x, y, text_color, -1, "%s", tp->task_name);
+		textprintf_ex(bitmap, font_10, x, y + height, text_color, -1,\
+					  "period: %d ms", tp->period);
+		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1,\
+					  "wcet: %f ms", wcet);
+		textprintf_ex(bitmap, font_10, x, y + 3 * height, text_color, -1,\
+					  "deadline miss: %d", deadline_miss);
 }
 
 //------------------------------------------------------------------------------
@@ -459,13 +468,15 @@ int 	height, text_color;
 static
 void	print_performace_info(BITMAP* bitmap)
 {
-int 	spacing;
+int		current_quad;
 
-		spacing = 250;
-		print_performace_label(bitmap, 0, 0);
-		print_performace_label(bitmap, spacing, 0);
-		print_performace_label(bitmap, 2 * spacing, 0);
-		print_performace_label(bitmap, 3 * spacing, 0);
+		current_quad = 0;
+
+		clear_to_color(bitmap, 0);
+
+		print_performace_label(bitmap, 0, 0, &(gui_tp[0]));
+		print_performace_label(bitmap, LOG_SPACING, 0,  &(regulator_tp[current_quad]));
+		print_performace_label(bitmap, 2 * LOG_SPACING, 0, &(guidance_tp[current_quad]));
 
 		blit(bitmap, screen, 0, 0, LOG_X, LOG_Y, LOG_W, LOG_H);
 }
@@ -528,6 +539,8 @@ int			i, bg_color;
 			print_plot_legend();
 			while(1) {
 
+				set_start_time(tp);
+
 				// Draw quadrotors
 				draw_quads(fly_bitmap);
 
@@ -540,6 +553,8 @@ int			i, bg_color;
 				print_performace_info(log_bitmap);
 
 				// Handle thread parameters
+				set_finish_time(tp);
+				update_wcet(tp);
 				if(deadline_miss(tp))
 					printf("%d\n", tp->dmiss);
 				wait_for_period(tp);
