@@ -27,13 +27,14 @@ pthread_attr_t	gui_attr[1];
 
 //------------------------------------------------------------------------------
 //	Function create_task
-// 	creates a task given the task parameters, id, attribute, body,
+// 	creates a task given the task name, parameters, id, attribute, body,
 //	period, relative deadline and the no. of replica required;
 //	return 0 if success, one of the ERRNO otherwise
 //------------------------------------------------------------------------------
 static
-int		create_task(task_par tp[], pthread_t tid[], pthread_attr_t attr[],\
-					void*(*task_body)(void*), int period, int deadline, int replica)
+int		create_task(char* task_name, task_par tp[], pthread_t tid[],\
+					pthread_attr_t attr[], void*(*task_body)(void*),\
+					int period, int deadline, int replica)
 {
 int		i;
 int 	error;
@@ -43,6 +44,7 @@ int 	error;
 			tp[i].period = period;
 			tp[i].deadline = deadline;
 			tp[i].dmiss = 0;
+			snprintf(tp[i].task_name, 10, "%s %d", task_name, i);
 			pthread_mutex_init(&tp[i].mutex, NULL);
 
 			error = pthread_attr_init(&attr[i]);
@@ -109,19 +111,19 @@ int		i, error;
 			set_initial_condition(i);
 
 		// threads
-		error = create_task(guidance_tp, guidance_tid, guidance_attr,\
-							guidance_task, GUIDANCE_PERIOD,\
+		error = create_task("Guidance", guidance_tp, guidance_tid,\
+							guidance_attr, guidance_task, GUIDANCE_PERIOD,\
 							GUIDANCE_DEADLINE, MAX_QUADROTORS);
 		if(error != 0)
 			return error;
 
-		error = create_task(regulator_tp, regulator_tid, regulator_attr,\
-							regulator_task, REGULATOR_PERIOD,\
+		error = create_task("Controller", regulator_tp, regulator_tid,\
+							regulator_attr,	regulator_task, REGULATOR_PERIOD,\
 							REGULATOR_DEADLINE, MAX_QUADROTORS);
 		if(error != 0)
 			return error;
 
-		error = create_task(gui_tp, gui_tid, gui_attr,\
+		error = create_task("Gui", gui_tp, gui_tid, gui_attr,\
 							gui_task, GUI_PERIOD, GUI_DEADLINE, 1);
 		if(error != 0)
 			return error;

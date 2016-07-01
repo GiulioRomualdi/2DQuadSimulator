@@ -447,9 +447,8 @@ int 	height, text_color;
 		// pthread_mutex_lock(tp->mutex);
 		textprintf_ex(bitmap, font_11, x, y, text_color, -1, "TASKNAME");
 		textprintf_ex(bitmap, font_10, x, y + height, text_color, -1, "period: ");
-		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1, "bcet: ");
-		textprintf_ex(bitmap, font_10, x, y + 3 * height, text_color, -1, "wcet: ");
-		textprintf_ex(bitmap, font_10, x, y + 4 * height, text_color, -1, "deadline miss: ");
+		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1, "wcet: ");
+		textprintf_ex(bitmap, font_10, x, y + 3 * height, text_color, -1, "deadline miss: ");
 		// pthread_mutex_unlock(tp->mutex);
 }
 
