@@ -1,11 +1,15 @@
 #ifndef GUI_H
 #define GUI_H
 
+#include <pthread.h>
+
 //------------------------------------------------------------------------------
 //	TASK CONSTANTS
 //------------------------------------------------------------------------------
 #define GUI_PERIOD		34			// gui task period in ms
 #define GUI_DEADLINE	34			// gui task relative deadline in ms
+#define USER_PERIOD		500.0		// user task period in ms
+
 //------------------------------------------------------------------------------
 //	PLOT CONSTANTS
 //------------------------------------------------------------------------------
@@ -21,18 +25,30 @@
 //	DATA STRUCTURES DECLARATIONS
 //------------------------------------------------------------------------------
 struct	plot_data {
-		float	buffer[BUFF_SIZE];	// data
-		int		index;				// index of the oldest sample in buffer
+		float				buffer[BUFF_SIZE];	// data
+		int					index;				// index of the oldest sample in buffer
 };
 typedef struct plot_data plot_data;
+
+struct	selected_quadrotor {
+		int					index;				// index
+		pthread_mutex_t		mutex;				// mutex
+
+};
+typedef struct selected_quadrotor selected_quadrotor;
+
+//------------------------------------------------------------------------------
+//	GLOBAL VARIABLE EXTERN DECLARATIONS
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
 //------------------------------------------------------------------------------
-
+void	init_selected_quad();
 //------------------------------------------------------------------------------
 //	THREAD CODE
 //------------------------------------------------------------------------------
 void*	gui_task(void* arg);
+void*	user_task(void* arg);
 
 #endif

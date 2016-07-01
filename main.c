@@ -78,6 +78,11 @@ int 	i, error;
 		if (error != 0) {
 			perror("(pthread_join) Error:");
 		}
+		error = pthread_join(user_tid[0], NULL);
+		if (error != 0) {
+			perror("(pthread_user) Error:");
+		}
+
 
 		return 0;
 }
@@ -94,6 +99,10 @@ int		i, error;
 		allegro_init();
 		set_color_depth(32);
 		set_gfx_mode(GFX_AUTODETECT_WINDOWED, WINDOW_W, WINDOW_H, 0, 0);
+		install_keyboard();
+
+		// init selected quadrotor
+		init_selected_quad();
 
 		// random number generation
 		init_random_generator();
@@ -122,6 +131,12 @@ int		i, error;
 							gui_task, GUI_PERIOD, GUI_DEADLINE, 1);
 		if(error != 0)
 			return error;
+
+		error = create_task("User", user_tp, user_tid, user_attr,\
+							user_task, GUI_PERIOD, 0, 1);
+		if(error != 0)
+			return error;
+
 
 		return 0;
 }

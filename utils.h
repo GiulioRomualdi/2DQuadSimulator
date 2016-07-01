@@ -47,6 +47,12 @@ extern task_par			gui_tp[1];
 extern pthread_t		gui_tid[1];
 extern pthread_attr_t	gui_attr[1];
 //------------------------------------------------------------------------------
+//	TASK USER
+//------------------------------------------------------------------------------
+extern task_par			user_tp[1];
+extern pthread_t		user_tid[1];
+extern pthread_attr_t	user_attr[1];
+//------------------------------------------------------------------------------
 //	MUTEX
 //------------------------------------------------------------------------------
 extern pthread_mutex_t 	guidance_mutex[MAX_QUADROTORS];
@@ -100,5 +106,5 @@ void	update_wcet(task_par* tp);
 void	wait_for_period(task_par* tp);
 int		deadline_miss(task_par* tp);
 void	mutex_init();
-
+void	aperiodic_wait(struct task_par* tp);
 #endif

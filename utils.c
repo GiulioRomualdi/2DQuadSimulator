@@ -26,6 +26,10 @@ pthread_attr_t	guidance_attr[MAX_QUADROTORS];
 task_par		gui_tp[1];
 pthread_t		gui_tid[1];
 pthread_attr_t	gui_attr[1];
+task_par		user_tp[1];
+pthread_t		user_tid[1];
+pthread_attr_t	user_attr[1];
+
 //	Mutex required for mutual exclusion
 pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
 pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
@@ -564,4 +568,17 @@ struct timespec diff;
 			time_copy(diff, &(tp->wcet));
 
 		pthread_mutex_unlock(&(tp->mutex));
+}
+
+//-----------------------------------------------------------------------------
+//	Function aperiodic_wait
+//	suspends the thread until the next activation
+//-----------------------------------------------------------------------------
+void	aperiodic_wait(struct task_par* tp)
+{
+struct timespec	time;
+
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		time_add_delta(&time, tp->period);
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
 }

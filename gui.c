@@ -108,7 +108,8 @@
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
-FONT	*font_16, *font_12, *font_11, *font_10;
+FONT				*font_16, *font_12, *font_11, *font_10;
+selected_quadrotor	selected_quad;
 
 //------------------------------------------------------------------------------
 //	PLOT DATA FUNCTIONS
@@ -559,5 +560,66 @@ int			i, bg_color;
 				wait_for_period(tp);
 				update_activation_time(tp);
 				update_abs_deadline(tp);
+			}
+}
+
+//------------------------------------------------------------------------------
+//	Function init_selected_quad
+//------------------------------------------------------------------------------
+void	init_selected_quad()
+{
+		selected_quad.index = 0;
+		pthread_mutex_init(&(selected_quad.mutex), NULL);
+}
+
+//------------------------------------------------------------------------------
+//	Function get_selected_quad
+//	returns the index of selected quadrotor
+//------------------------------------------------------------------------------
+int		get_selected_quad()
+{
+int		index;
+
+		pthread_mutex_lock(&(selected_quad.mutex));
+		index = selected_quad.index;
+		pthread_mutex_unlock(&(selected_quad.mutex));
+
+		return index;
+}
+
+//------------------------------------------------------------------------------
+//	Function get_user_command
+//------------------------------------------------------------------------------
+static
+void	get_user_command()
+{
+		readkey();
+		if(key[KEY_P]) {
+			pthread_mutex_lock(&(selected_quad.mutex));
+			selected_quad.index = (selected_quad.index - 1) % MAX_QUADROTORS;
+			pthread_mutex_unlock(&(selected_quad.mutex));
+		}
+		else if(key[KEY_N]) {
+			pthread_mutex_lock(&(selected_quad.mutex));
+			selected_quad.index = (selected_quad.index + 1) % MAX_QUADROTORS;
+			pthread_mutex_unlock(&(selected_quad.mutex));
+		}
+		else if(key[KEY_Q])
+			exit(EXIT_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+//	Function user_task
+//------------------------------------------------------------------------------
+void*		user_task(void* arg)
+{
+task_par*	tp;
+
+			tp = (struct task_par*)arg;
+
+			while(1) {
+				get_user_command();
+
+				aperiodic_wait(tp);
 			}
 }
