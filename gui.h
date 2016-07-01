@@ -15,8 +15,7 @@
 //	SIZE CONSTANTS
 //------------------------------------------------------------------------------
 #define WINDOW_W		1350		// main window width
-#define WINDOW_H		740			// main window height
-
+#define WINDOW_H		750			// main window height
 
 //------------------------------------------------------------------------------
 //	DATA STRUCTURES DECLARATIONS

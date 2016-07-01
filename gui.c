@@ -19,7 +19,7 @@
 #define FLY_W			960.0					// flying area width in pixel
 #define FLY_H			540.0					// flying area heigth in pixel
 #define	FLY_X			30.0					// flying area upper-left corner (x)
-#define	FLY_Y			50.0					// flying area upper-left corner (y)
+#define	FLY_Y			45.0					// flying area upper-left corner (y)
 #define	FLY_SCALING		(FLY_W / WORLD_W)		// scale factor
 //------------------------------------------------------------------------------
 //	PLOT AREA CONSTANTS
@@ -44,6 +44,13 @@
 #define	PLOT_THETA_Y	PLOT_Y_Y + PLOT_H + 2 * PLOT_MARGIN + PLOT_SPACING
 #define	PLOT_THETA_MAX	0.1						// max value of data
 //------------------------------------------------------------------------------
+//	FLYING AREA CONSTANTS
+//------------------------------------------------------------------------------
+#define LOG_W			960.0					// log area width in pixel
+#define LOG_H			100.0					// log area heigth in pixel
+#define	LOG_X			30.0					// log area upper-left corner (x)
+#define	LOG_Y			FLY_Y + FLY_H + 2 * MARGIN + 5	// log area upper-left corner (y)
+//------------------------------------------------------------------------------
 //	QUADROTOR GRAPHIC CONSTANTS
 //------------------------------------------------------------------------------
 #define	QUAD_HEIGHT		0.07					// height of the quadcopter in m
@@ -61,9 +68,9 @@
 #define LAYOUT_COL_G	49						// green channel for layout
 #define LAYOUT_COL_B	49						// blue channel for layout
 //------------------------------------------------------------------------------
-#define SKY_COL_R		10						// red channel for sky color
-#define	SKY_COL_G	   	10						// green channel for sky color
-#define SKY_COL_B		10						// blue channel for sky color
+#define SKY_COL_R		0						// red channel for sky color
+#define	SKY_COL_G	   	0						// green channel for sky color
+#define SKY_COL_B		0						// blue channel for sky color
 //------------------------------------------------------------------------------
 #define TEXT_COL_R  	180						// red channel for text
 #define TEXT_COL_G		180						// green channel for text
@@ -96,6 +103,44 @@
 #define PLOT_T_AXIS_R  	48						// red channel for plot time axis
 #define PLOT_T_AXIS_G	49						// green channel for plot time axis
 #define PLOT_T_AXIS_B	49						// blue channel for plot time axis
+
+//------------------------------------------------------------------------------
+//	GLOBAL VARIABLE DEFINITIONS
+//------------------------------------------------------------------------------
+FONT	*font_16, *font_12, *font_11, *font_10;
+
+//------------------------------------------------------------------------------
+//	PLOT DATA FUNCTIONS
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function init_plot_data
+//------------------------------------------------------------------------------
+static
+void	init_plot_data(plot_data* plot)
+{
+		plot->index = BUFF_SIZE;
+}
+
+//------------------------------------------------------------------------------
+//	Function plot_add_sample
+//  add a sample to the buffer of the plot_data 'plot'
+//------------------------------------------------------------------------------
+static
+void	plot_add_sample(plot_data* plot, float sample)
+{
+int 	i;
+
+		// Update the index pointing to the oldest sample
+		if(plot->index > 0)
+			(plot->index)--;
+
+		// Shift the buffer to the left
+		for(i = plot->index; i < BUFF_SIZE - 1; i++)
+			plot->buffer[i] = plot->buffer[i + 1];
+		// Add the new sample to the buffer
+		plot->buffer[BUFF_SIZE - 1] = sample;
+}
 
 //------------------------------------------------------------------------------
 //	DRAWING FUNCTION
@@ -194,7 +239,9 @@ int		i, sky_color;
 
 //------------------------------------------------------------------------------
 //	Function draw_layout
+//	draw the static layout of the gui
 //------------------------------------------------------------------------------
+static
 void	draw_layout()
 {
 int		color;
@@ -223,105 +270,11 @@ int		color;
 }
 
 //------------------------------------------------------------------------------
-//	Function draw_titles
-//------------------------------------------------------------------------------
-void	draw_titles()
-{
-FONT	*font_title, *font_subtitles;
-PALETTE	palette;
-int		title_col;
-
-		font_title = load_font("opensans_16.pcx", palette, NULL);
-		if (!font_title)
-			printf("Cannot load title font.\n");
-
-		font_subtitles = load_font("opensans_11.pcx", palette, NULL);
-		if (!font_subtitles)
-			printf("Cannot load plot font.\n");
-
-		title_col = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
-		textout_centre_ex(screen, font_title, "2D Quad Simulator",\
-						  WINDOW_W / 2, 5, title_col, -1);
-		textout_centre_ex(screen, font_subtitles, "errors",\
-						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 25, title_col, -1);
-		textout_centre_ex(screen, font_subtitles, "view",\
-						  FLY_X + FLY_W / 2, FLY_Y - 25, title_col, -1);
-}
-
-//------------------------------------------------------------------------------
-//	Function draw_plot_legend
-//------------------------------------------------------------------------------
-void	draw_plot_legend()
-{
-FONT*	font_legend;
-PALETTE	palette;
-int		legend_col, tracking_error_col, estimation_error_col;
-int		second_word_length;
-
-		// Load font
-		font_legend = load_font("opensans_10.pcx", palette, NULL);
-		if (!font_legend)
-			printf("Cannot load legend font.\n");
-
-		// Set colors
- 		legend_col = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
-	   	estimation_error_col = makecol(PLOT_COL1_R, PLOT_COL1_G, PLOT_COL1_B);
-		tracking_error_col = makecol(PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
-
-		// Print texts
-		textout_ex(screen, font_legend, "legend:",\
-				   PLOT_X_X - PLOT_MARGIN,\
-				   PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, legend_col, -1);
-
-		textout_right_ex(screen, font_legend, "estimation err",\
-				   		 PLOT_X_X + PLOT_W + PLOT_MARGIN,\
-				   		 PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, estimation_error_col, -1);
-
-	 	second_word_length = text_length(font_legend, "estimation err ");
-		textout_right_ex(screen, font_legend, "tracking err",\
-				   PLOT_X_X + PLOT_W + PLOT_MARGIN - second_word_length, \
-				   PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, tracking_error_col, -1);
-}
-
-//------------------------------------------------------------------------------
-//	PLOT FUNCTIONS
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-//	Function init_plot_data
-//------------------------------------------------------------------------------
-static
-void	init_plot_data(plot_data* plot)
-{
-		plot->index = BUFF_SIZE;
-}
-
-//------------------------------------------------------------------------------
-//	Function plot_add_sample
-//  add a sample to the buffer of the plot_data 'plot'
-//------------------------------------------------------------------------------
-static
-void	plot_add_sample(plot_data* plot, float sample)
-{
-int 	i;
-
-		// Update the index pointing to the oldest sample
-		if(plot->index > 0)
-			(plot->index)--;
-
-		// Shift the buffer to the left
-		for(i = plot->index; i < BUFF_SIZE - 1; i++)
-			plot->buffer[i] = plot->buffer[i + 1];
-		// Add the new sample to the buffer
-		plot->buffer[BUFF_SIZE - 1] = sample;
-}
-
-//------------------------------------------------------------------------------
-//	Function plot_signal
+//	Function draw_signal
 //  plot the signal, stored in the plot_data 'plot', into the BITMAP 'bitmap'
 //------------------------------------------------------------------------------
 static
-void	plot_signal(BITMAP* bitmap, plot_data* plot, float max_value,\
+void	draw_signal(BITMAP* bitmap, plot_data* plot, float max_value,\
 					   int color_r, int color_g, int color_b)
 {
 int		i, r, g ,b, color;
@@ -364,14 +317,14 @@ void	draw_figure(BITMAP* bitmap, plot_data* signal_1, plot_data* signal_2,\
 {
 		clear_to_color(bitmap, 0);
 
-		plot_signal(bitmap, signal_1, max_value, PLOT_COL1_R, PLOT_COL1_G, PLOT_COL1_B);
-		plot_signal(bitmap, signal_2, max_value, PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
+		draw_signal(bitmap, signal_1, max_value, PLOT_COL1_R, PLOT_COL1_G, PLOT_COL1_B);
+		draw_signal(bitmap, signal_2, max_value, PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
 
 		blit(bitmap, screen, 0, 0, upper_left_x, upper_left_y, PLOT_W, PLOT_H);
 }
 
 //------------------------------------------------------------------------------
-//	Function draw_plot_arean
+//	Function draw_plot_area
 //  draws the plot area containing three figures (estimation and tracking error
 //	of x, y and theta for the i-th quadcopter)
 //------------------------------------------------------------------------------
@@ -418,12 +371,125 @@ float	theta, theta_est, theta_traj;
 					PLOT_Y_X, PLOT_Y_Y);
 		draw_figure(bitmap_theta, plot_theta_est, plot_theta_track, PLOT_THETA_MAX,\
 					PLOT_THETA_X, PLOT_THETA_Y);
-
 }
+
+//------------------------------------------------------------------------------
+//	PRINT FUNCTIONS
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function print_titles
+//	print titles and subtitles of the gui
+//------------------------------------------------------------------------------
+static
+void	print_titles()
+{
+int		title_color;
+
+		title_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
+		textout_ex(screen, font_16, "2D Quad Simulator",\
+				   10, 5, title_color, -1);
+		textout_centre_ex(screen, font_12, "errors",\
+						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 25, title_color, -1);
+		textout_centre_ex(screen, font_12, "view",\
+						  FLY_X + FLY_W / 2, FLY_Y - 25, title_color, -1);
+		textout_centre_ex(screen, font_12, "realtime peformance",\
+						  FLY_X + FLY_W / 2, FLY_Y + FLY_H + MARGIN + 10, title_color, -1);
+}
+
+//------------------------------------------------------------------------------
+//	Function print_plot_legend
+//	print the lengend of the plot area
+//------------------------------------------------------------------------------
+static
+void	print_plot_legend()
+{
+int		legend_color, tracking_error_color, estimation_error_color;
+int		second_word_length;
+
+		// Set colors
+ 		legend_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
+	   	estimation_error_color = makecol(PLOT_COL1_R, PLOT_COL1_G, PLOT_COL1_B);
+		tracking_error_color = makecol(PLOT_COL2_R, PLOT_COL2_G, PLOT_COL2_B);
+
+		// Print texts
+		textout_ex(screen, font_10, "legend:",\
+				   PLOT_X_X - PLOT_MARGIN,\
+				   PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, legend_color, -1);
+
+		textout_right_ex(screen, font_10, "estimation err",\
+				   		 PLOT_X_X + PLOT_W + PLOT_MARGIN,\
+				   		 PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, estimation_error_color, -1);
+
+	 	second_word_length = text_length(font_10, "estimation err ");
+		textout_right_ex(screen, font_10, "tracking err",\
+						 PLOT_X_X + PLOT_W + PLOT_MARGIN - second_word_length, \
+						 PLOT_THETA_Y + PLOT_H + PLOT_MARGIN + 6, tracking_error_color, -1);
+}
+
+//------------------------------------------------------------------------------
+//	Function print_performace_label
+//	print a label containing realtime performance indicators
+//	the label is drawn at ('x', 'y')
+//------------------------------------------------------------------------------
+static
+void   	print_performace_label(BITMAP* bitmap, int x, int y)
+							   //task_par* tp)
+{
+int 	height, text_color;
+
+		// Set color
+		text_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
+
+		// Evaluate text_width and text_height
+		height = text_height(font_11);
+
+		// pthread_mutex_lock(tp->mutex);
+		textprintf_ex(bitmap, font_11, x, y, text_color, -1, "TASKNAME");
+		textprintf_ex(bitmap, font_10, x, y + height, text_color, -1, "period: ");
+		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1, "bcet: ");
+		textprintf_ex(bitmap, font_10, x, y + 3 * height, text_color, -1, "wcet: ");
+		textprintf_ex(bitmap, font_10, x, y + 4 * height, text_color, -1, "deadline miss: ");
+		// pthread_mutex_unlock(tp->mutex);
+}
+
+//------------------------------------------------------------------------------
+//	Function print_performace_info
+//	print a performance label
+//------------------------------------------------------------------------------
+static
+void	print_performace_info(BITMAP* bitmap)
+{
+int 	spacing;
+
+		spacing = 250;
+		print_performace_label(bitmap, 0, 0);
+		print_performace_label(bitmap, spacing, 0);
+		print_performace_label(bitmap, 2 * spacing, 0);
+		print_performace_label(bitmap, 3 * spacing, 0);
+
+		blit(bitmap, screen, 0, 0, LOG_X, LOG_Y, LOG_W, LOG_H);
+}
+
 
 //------------------------------------------------------------------------------
 //	TASK CODE
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function load_fonts
+//------------------------------------------------------------------------------
+static
+void	load_fonts()
+{
+int		i;
+char	*font_names[4] = {"opensans_16.pcx", "opensans_12.pcx",\
+						  "opensans_11.pcx", "opensans_10.pcx"};
+FONT	**fonts[4] = {&font_16, &font_12, &font_11, &font_10};
+
+		 for(i = 0; i < 4; i++)
+			*fonts[i] = load_font(font_names[i], NULL, NULL);
+}
 
 //------------------------------------------------------------------------------
 //	Function gui_task
@@ -431,20 +497,22 @@ float	theta, theta_est, theta_traj;
 void*		gui_task(void* arg)
 {
 task_par*	tp;
-BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap;
+BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap, *log_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est, plot_theta_track;
 int			i, bg_color;
 
 			tp = (struct task_par*)arg;
-
 			init_timespecs(tp);
+			load_fonts();
 
-			// Plots initialization
 			i = 0;
+
+			// Bitmap initialization
 			fly_bitmap = create_bitmap(FLY_W, FLY_H);
 			plot_x_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			plot_y_bitmap = create_bitmap(PLOT_W, PLOT_H);
 			plot_theta_bitmap = create_bitmap(PLOT_W, PLOT_H);
+			log_bitmap = create_bitmap(LOG_W, LOG_H);
 
 			init_plot_data(&plot_x_est);
 			init_plot_data(&plot_y_est);
@@ -453,13 +521,12 @@ int			i, bg_color;
 			init_plot_data(&plot_y_track);
 			init_plot_data(&plot_theta_track);
 
-			// Clear screen and draw layout
+			// Clear screen and draw static layout
 			bg_color = makecol(BG_COL_R, BG_COL_G, BG_COL_B);
 			clear_to_color(screen, bg_color);
 			draw_layout();
-			draw_titles();
-			draw_plot_legend();
-
+			print_titles();
+			print_plot_legend();
 			while(1) {
 
 				// Draw quadrotors
@@ -470,6 +537,8 @@ int			i, bg_color;
 							   &plot_x_est, &plot_x_track,\
 							   &plot_y_est, &plot_y_track,\
 							   &plot_theta_est, &plot_theta_track, i);
+
+				print_performace_info(log_bitmap);
 
 				// Handle thread parameters
 				if(deadline_miss(tp))
