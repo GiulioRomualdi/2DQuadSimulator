@@ -555,8 +555,7 @@ int			i, bg_color;
 				// Handle thread parameters
 				set_finish_time(tp);
 				update_wcet(tp);
-				if(deadline_miss(tp))
-					printf("%d\n", tp->dmiss);
+				deadline_miss(tp);
 				wait_for_period(tp);
 				update_activation_time(tp);
 				update_abs_deadline(tp);

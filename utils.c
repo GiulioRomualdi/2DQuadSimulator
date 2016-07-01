@@ -505,11 +505,7 @@ void	wait_for_period(struct task_par* tp)
 //-----------------------------------------------------------------------------
 int		deadline_miss(struct task_par* tp)
 {
-struct timespec current_time;
-
-		clock_gettime(CLOCK_MONOTONIC, &current_time);
-
-		if(time_cmp(&current_time, &(tp->abs_deadline)) > 0) {
+		if(time_cmp(&(tp->finish_time), &(tp->abs_deadline)) > 0) {
 			pthread_mutex_lock(&(tp->mutex));
 			tp->dmiss++;
 			pthread_mutex_unlock(&(tp->mutex));
