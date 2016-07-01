@@ -88,8 +88,12 @@
 #define FILL_COL_B		49						// blue channel for fill colo
 //------------------------------------------------------------------------------
 #define FORCE_COL_R		255						// red channel for force color
-#define FORCE_COL_G		0						// green channel for force color
+#define FORCE_COL_G		129						// green channel for force color
 #define FORCE_COL_B		0						// blue channel for force color
+//------------------------------------------------------------------------------
+#define SELECTED_COL_R	255						// red channel for selected quad
+#define SELECTED_COL_G	0						// green channel for selected quad
+#define SELECTED_COL_B	0						// blue channel for selected quad
 //------------------------------------------------------------------------------
 // PLOT COLOR CONSTANTS
 //------------------------------------------------------------------------------
@@ -110,6 +114,10 @@
 //------------------------------------------------------------------------------
 FONT				*font_16, *font_12, *font_11, *font_10;
 selected_quadrotor	selected_quad;
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+int	get_selected_quad();
 
 //------------------------------------------------------------------------------
 //	PLOT DATA FUNCTIONS
@@ -154,9 +162,10 @@ int 	i;
 //	and the forces 'fl', 'fr'
 //------------------------------------------------------------------------------
 static
-void	draw_quadrotor(BITMAP* bitmap, float x, float y, float theta, float fl, float fr)
+void	draw_quadrotor(BITMAP* bitmap, float x, float y, float theta,\
+					   float fl, float fr, int selected)
 {
-int		fill_color, frame_color, force_color;
+int		fill_color, frame_color, force_color, selected_color;
 float	x_left, x_right, x_down, x_centre, x_fl, x_fr;
 float	y_left, y_right, y_down, y_centre, y_fl, y_fr;
 float	rot[3][3], transl[3][3], scale_[3][3], transformation[3][3];
@@ -190,16 +199,24 @@ float 	coords[3][6] = {{-L,  L,  0,           0, -L,                L},
 		fill_color = makecol(FILL_COL_R, FILL_COL_G, FILL_COL_B);
 		frame_color = makecol(FRAME_COL_R, FRAME_COL_G, FRAME_COL_B);
 		force_color = makecol(FORCE_COL_R, FORCE_COL_G, FORCE_COL_B);
+		selected_color = makecol(SELECTED_COL_R, SELECTED_COL_G, SELECTED_COL_B);
 
 		// Draw the quadcopter
-		// Body
+
+		// Triangle fill
 		triangle(bitmap, x_left, y_left, x_right, y_right, x_down, y_down, fill_color);
-		circle(bitmap, x_centre, y_centre, FLY_SCALING * QUAD_HEIGHT, frame_color);
-		// Edges
+
+		// Triangle edges
 		line(bitmap, x_left, y_left, x_right, y_right, frame_color);
 		line(bitmap, x_down, y_down, x_right, y_right, frame_color);
 		line(bitmap, x_left, y_left, x_down, y_down, frame_color);
-		// Forces
+
+		// Circle
+		if (selected)
+			circlefill(bitmap, x_centre, y_centre, FLY_SCALING * QUAD_HEIGHT, selected_color);
+		circle(bitmap, x_centre, y_centre, FLY_SCALING * QUAD_HEIGHT, frame_color);
+
+		// Force arrows
 		line(bitmap, x_left, y_left, x_fl, y_fl, force_color);
 		line(bitmap, x_right, y_right, x_fr, y_fr, force_color);
 }
@@ -232,7 +249,8 @@ int		i, sky_color;
 			pthread_mutex_unlock(&force_mutex[i]);
 
 			// Draw the quadrotor
-			draw_quadrotor(bitmap, x, y, theta, force_left, force_right);
+			draw_quadrotor(bitmap, x, y, theta, force_left, force_right,\
+						   get_selected_quad() == i);
 		}
 
 		// Transfer image from bitmap to screen
@@ -336,11 +354,14 @@ static
 void	draw_plot_area(BITMAP* bitmap_x, BITMAP* bitmap_y, BITMAP* bitmap_theta,\
 					   plot_data* plot_x_est, plot_data* plot_x_track,\
 					   plot_data* plot_y_est, plot_data* plot_y_track,\
-					   plot_data* plot_theta_est, plot_data* plot_theta_track, int i)
+					   plot_data* plot_theta_est, plot_data* plot_theta_track)
 {
 float	x, x_est, x_traj;
 float	y, y_est, y_traj;
 float	theta, theta_est, theta_traj;
+int		i;
+
+		i = get_selected_quad();
 
 	 	pthread_mutex_lock(&dynamics_mutex[i]);
 		x = states[i].x;
@@ -469,15 +490,15 @@ float	wcet;
 static
 void	print_performace_info(BITMAP* bitmap)
 {
-int		current_quad;
+int		i;
 
-		current_quad = 0;
+		i = get_selected_quad();
 
 		clear_to_color(bitmap, 0);
 
 		print_performace_label(bitmap, 0, 0, &(gui_tp[0]));
-		print_performace_label(bitmap, LOG_SPACING, 0,  &(regulator_tp[current_quad]));
-		print_performace_label(bitmap, 2 * LOG_SPACING, 0, &(guidance_tp[current_quad]));
+		print_performace_label(bitmap, LOG_SPACING, 0,  &(regulator_tp[i]));
+		print_performace_label(bitmap, 2 * LOG_SPACING, 0, &(guidance_tp[i]));
 
 		blit(bitmap, screen, 0, 0, LOG_X, LOG_Y, LOG_W, LOG_H);
 }
@@ -485,6 +506,10 @@ int		current_quad;
 
 //------------------------------------------------------------------------------
 //	TASK CODE
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	GUI TASK
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -510,13 +535,11 @@ void*		gui_task(void* arg)
 task_par*	tp;
 BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap, *log_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est, plot_theta_track;
-int			i, bg_color;
+int			bg_color;
 
 			tp = (struct task_par*)arg;
 			init_timespecs(tp);
 			load_fonts();
-
-			i = 0;
 
 			// Bitmap initialization
 			fly_bitmap = create_bitmap(FLY_W, FLY_H);
@@ -549,7 +572,7 @@ int			i, bg_color;
 				draw_plot_area(plot_x_bitmap, plot_y_bitmap, plot_theta_bitmap,\
 							   &plot_x_est, &plot_x_track,\
 							   &plot_y_est, &plot_y_track,\
-							   &plot_theta_est, &plot_theta_track, i);
+							   &plot_theta_est, &plot_theta_track);
 
 				print_performace_info(log_bitmap);
 
@@ -562,6 +585,10 @@ int			i, bg_color;
 				update_abs_deadline(tp);
 			}
 }
+
+//------------------------------------------------------------------------------
+//	USER TASK
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	Function init_selected_quad
