@@ -43,6 +43,7 @@ int 	error;
 			tp[i].period = period;
 			tp[i].deadline = deadline;
 			tp[i].dmiss = 0;
+			pthread_mutex_init(&tp[i].mutex, NULL);
 
 			error = pthread_attr_init(&attr[i]);
 			if (error != 0) {

@@ -337,6 +337,7 @@ float	sample;
 //	copies a source timespec 't_source' in a destination timespec pointed by 
 //	't_dest'
 //------------------------------------------------------------------------------
+static
 void	time_copy(struct timespec t_source, struct timespec* t_dest)
 {
 		t_dest->tv_sec = t_source.tv_sec;
@@ -348,6 +349,7 @@ void	time_copy(struct timespec t_source, struct timespec* t_dest)
 //	adds a value in milliseconds 'delta' to the time represented
 //	by the timespec pointed by 'time'
 //------------------------------------------------------------------------------
+static
 void	time_add_delta(struct timespec* time, int delta)
 {
 		time->tv_sec += delta / 1000;
@@ -364,6 +366,7 @@ void	time_add_delta(struct timespec* time, int delta)
 //	compares two time variables represented by two timespec 't1' and 't2'
 //	and returns 0 if they are equal, 1 if 't1' > 't2', -1 if 't1' < 't2'
 //------------------------------------------------------------------------------
+static
 int		time_cmp(struct timespec t1, struct timespec t2)
 {
 		if(t1.tv_sec > t2.tv_sec)
@@ -461,45 +464,4 @@ struct timespec current_time;
 		}
 
 		return 0;
-}
-
-//-----------------------------------------------------------------------------
-//	DEBUG
-//-----------------------------------------------------------------------------
-void 	print_header()
-{
-		printf("x,vx,y,vy,theta,vtheta,xe,vxe,ye,vye,thetae,vthetae\n");
-}
-
-void 	print_state(const state* s, const state* s1)
-{
-		printf("%f,", s->x);
-		printf("%f,", s->vx);
-		printf("%f,", s->y);
-		printf("%f,", s->vy);
-		printf("%f,", s->theta);
-		printf("%f,", s->vtheta);
-		printf("%f,", s1->x);
-		printf("%f,", s1->vx);
-		printf("%f,", s1->y);
-		printf("%f,", s1->vy);
-		printf("%f,", s1->theta);
-		printf("%f", s1->vtheta);
-		printf("\n");
-}
-
-void 	print_state_1(const state* s)
-{
-		printf("%f,", s->x);
-		printf("%f,", s->vx);
-		printf("%f,", s->y);
-		printf("%f,", s->vy);
-		printf("%f,", s->theta);
-		printf("%f,", s->vtheta);
-		printf("\n");
-}
-
-void	print_u(float u[2])
-{
-		printf("%f, %f\n",u[0], u[1]);
 }

@@ -616,6 +616,7 @@ void 	init_R(int i, float sigma_x, float sigma_y, float sigma_theta)
 //	Function init_state_estimate
 //	initializes the i-th state estimate
 //------------------------------------------------------------------------------
+static
 void 	init_state_estimate(int i, float x, float vx, float y,\
 							float vy, float theta, float vtheta)
 {
@@ -631,6 +632,7 @@ void 	init_state_estimate(int i, float x, float vx, float y,\
 //	Function init_ekf_matrix
 //	initializes the matrices of the i-th kalman filter
 //------------------------------------------------------------------------------
+static
 void	init_ekf_matrix(int i, float T)
 {
 		init_A(i, T);

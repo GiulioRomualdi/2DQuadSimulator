@@ -8,14 +8,12 @@
 #define	M					1.0				// quadcopter mass in Kg
 #define IZ					(M * L * L /12)	// moment of inertia around axis x
 #define G					9.81			// gravitational acceleration in m/s^2
-#define MAX_QUADROTORS		1	   			// max number of quadrotor
-
+#define MAX_QUADROTORS		5	   			// max number of quadrotor
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
 #define	WORLD_W				8				// horizontal bound in m
 #define WORLD_H				4				// vertical bound in m
-
 //------------------------------------------------------------------------------
 //	TASK CONSTANTS
 //------------------------------------------------------------------------------
@@ -60,6 +58,7 @@ struct	force {
 		float			force_left;		// left force in N
 		float			force_right;	// right force in N
 };
+
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------
@@ -76,11 +75,8 @@ extern struct force forces[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 //	THREAD CODE FUNCTIONS
 //------------------------------------------------------------------------------
-void 	init_state_estimate(int i, float x, float vx, float y,\
-							float vy, float theta, float vtheta);
-void 	init_state(int i, float x, float vx, float y,\
-				   float vy, float theta, float vtheta);
 void	set_initial_condition(int i);
 void*	regulator_task(void* arg);
 void*	guidance_task(void* arg);
+
 #endif

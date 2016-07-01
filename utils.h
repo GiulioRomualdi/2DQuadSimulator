@@ -17,6 +17,7 @@ struct	task_par {								// task parameters
 		int 				dmiss;				// no. of misses
 		struct	timespec 	activation_time;	// next activation time
 		struct	timespec	abs_deadline;		// absolute
+		pthread_mutex_t		mutex;				// mutex
 };
 typedef struct task_par task_par;
 
@@ -56,13 +57,6 @@ float	get_uniform(float T);
 float	get_uniform_generic(float a, float b);
 float	get_gaussian(float std);
 
-//------------------------------------------------------------------------------
-//	TIMESPEC HANDLING
-//------------------------------------------------------------------------------
-void	time_copy(struct timespec t_source, struct timespec* t_dest);
-void	time_add_delta(struct timespec* time, int delta);
-int		time_cmp(struct timespec t1, struct timespec t2);
-
 //-----------------------------------------------------------------------------
 //	THREAD MANAGEMENT
 //-----------------------------------------------------------------------------
@@ -72,13 +66,5 @@ void	update_abs_deadline(struct task_par* tp);
 void	wait_for_period(struct task_par* tp);
 int		deadline_miss(struct task_par* tp);
 void	mutex_init();
-
-//-----------------------------------------------------------------------------
-//	DEBUG
-//-----------------------------------------------------------------------------
-void	print_header();
-void	print_state(const state*, const state*);
-void	print_state_1(const state*);
-void	print_u(float u[2]);
 
 #endif
