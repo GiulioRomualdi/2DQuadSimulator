@@ -24,11 +24,15 @@
 #define VY0_STD			1.0 / 3.0			// std of vy0
 #define THETA0_STD		0.6 / 3.0			// std of theta0
 #define VTHETA0_STD		0.0					// std of vtheta0
-#define	WIND_X_STD 		0.5					// std of the force due to wind along x
-#define WIND_Y_STD		0.5					// std of the force due to wind along y
+#define	WIND_X_STD 		1.0					// std of the force due to wind along x
+#define WIND_Y_STD		1.0					// std of the force due to wind along y
 #define NOISE_X_STD		1.0 / 3.0			// std of x measurament noise
 #define NOISE_Y_STD		1.0 / 3.0			// std of y measurament noise
 #define NOISE_THETA_STD	0.6 / 3.0			// std of theta measurament noise
+//------------------------------------------------------------------------------
+//	GUIDANCE SYSTEMS CONSTANTS
+//------------------------------------------------------------------------------
+#define	GUID_WAIT_TIME	0.0					// wait time for new target election
 
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
@@ -50,8 +54,52 @@ struct state states[MAX_QUADROTORS];
 struct state desired_trajectories[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
 struct trajectory_state traj_states[MAX_QUADROTORS];
+struct guidance_switch guid_switches[MAX_QUADROTORS];
 struct force forces[MAX_QUADROTORS];
 
+//------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable 'guid_switch'
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function init_selected_quad
+//	initializes the variable guid_switches
+//------------------------------------------------------------------------------
+void	init_guidance_switches()
+{
+int		i;
+
+		for (i = 0; i < MAX_QUADROTORS; i++) {
+			pthread_mutex_init(&(guid_switches[i].active_mutex), NULL);
+			guid_switches[i].active = 0;
+		}
+}
+
+//------------------------------------------------------------------------------
+//	Function get_guidance_state
+//	returns the state of the guidance system of the i-th quadrotor
+//------------------------------------------------------------------------------
+int		get_guidance_state(int index)
+{
+int		value;
+
+		pthread_mutex_lock(&(guid_switches[index].active_mutex));
+		value = guid_switches[index].active;
+		pthread_mutex_unlock(&(guid_switches[index].active_mutex));
+
+		return value;
+}
+
+//------------------------------------------------------------------------------
+//	Function switch_guidance
+//	turns on/off the guidance system of the i-th quadrotor
+//------------------------------------------------------------------------------
+void	switch_guidance(int index)
+{
+		pthread_mutex_lock(&(guid_switches[index].active_mutex));
+		guid_switches[index].active = (guid_switches[index].active + 1) % 2;
+		pthread_mutex_unlock(&(guid_switches[index].active_mutex));
+}
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION
 //------------------------------------------------------------------------------
@@ -732,28 +780,31 @@ float	wind_x, wind_y;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-//	Function set_initial_condition
-//	set the initial condition for the i-th simulation (state, estimate, trajectory)
+//	Function set_initial_conditions
+//	set the initial conditions for the simulation
 //------------------------------------------------------------------------------
-void	set_initial_condition(int i)
+void	set_initial_conditions()
 {
+int		i;
 float	x0, y0;
 
-		// Init state
-		x0 = get_uniform_generic(L, WORLD_W - L);
-		y0 = get_uniform_generic(L, WORLD_H - L);
-		init_state(i, x0, 0, y0, 0, 0, 0);
+		for (i = 0; i < MAX_QUADROTORS; i++) {
+			// Init state
+			x0 = get_uniform_generic(L, WORLD_W - L);
+			y0 = get_uniform_generic(L, WORLD_H - L);
+			init_state(i, x0, 0, y0, 0, 0, 0);
 
-		// Init estimate
-		init_state_estimate(i, x0, 0, y0, 0, 0, 0);
+			// Init estimate
+			init_state_estimate(i, x0, 0, y0, 0, 0, 0);
 
-		// Init trajectory
-		traj_states[i].current_time = 0;
-		traj_states[i].final_time = 3;
-		traj_states[i].x0 = x0;
-		traj_states[i].y0 = y0;
-		traj_states[i].xf = x0;
-		traj_states[i].yf = y0;
+			// Init trajectory
+			traj_states[i].current_time = 0;
+			traj_states[i].final_time = 3;
+			traj_states[i].x0 = x0;
+			traj_states[i].y0 = y0;
+			traj_states[i].xf = x0;
+			traj_states[i].yf = y0;
+		}
 }
 
 //------------------------------------------------------------------------------
@@ -822,6 +873,7 @@ state	reference_trajectory, estimate, state;
 			update_abs_deadline(tp);
 		}
 }
+
 //------------------------------------------------------------------------------
 //	Function guidance_task
 //------------------------------------------------------------------------------
@@ -839,41 +891,44 @@ float	current_time, final_time, tf;
 
 			set_start_time(tp);
 
-			// Get the current and final time of the trajectory
-			pthread_mutex_lock(&guidance_mutex[tp->id]);
-			current_time = traj_states[tp->id].current_time;
-			final_time = traj_states[tp->id].final_time;
-			pthread_mutex_unlock(&guidance_mutex[tp->id]);
+			if (get_guidance_state(tp->id)) {
 
-			if (current_time > final_time) {
-
-				// Get the current state of the quadrotor
-				pthread_mutex_lock(&kalman_mutex[tp->id]);
-				x0 = kalman_states[tp->id].estimate.x;
-				y0 = kalman_states[tp->id].estimate.y;
-				pthread_mutex_unlock(&kalman_mutex[tp->id]);
-
-				// Choose new target and final time
-				xf = get_uniform_generic(L, WORLD_W - L);
-				yf = get_uniform_generic(L, WORLD_H - L);
-
-				tf = sqrt(pow(xf - x0, 2) + pow(yf - y0, 2));
-				// Not too short
-				if (tf < 2)
-					tf = 2;
-				// Not too long
-				if (tf > 5)
-					tf = 5;
-
-				// Update guidance parameters
+				// Get the current and final time of the trajectory
 				pthread_mutex_lock(&guidance_mutex[tp->id]);
-				traj_states[tp->id].current_time = 0;
-				traj_states[tp->id].final_time = tf;
-				traj_states[tp->id].x0 = x0;
-				traj_states[tp->id].y0 = y0;
-				traj_states[tp->id].xf = xf;
-				traj_states[tp->id].yf = yf;
+				current_time = traj_states[tp->id].current_time;
+				final_time = traj_states[tp->id].final_time;
 				pthread_mutex_unlock(&guidance_mutex[tp->id]);
+
+				if (current_time > final_time + GUID_WAIT_TIME) {
+
+					// Get the current state of the quadrotor
+					pthread_mutex_lock(&kalman_mutex[tp->id]);
+					x0 = kalman_states[tp->id].estimate.x;
+					y0 = kalman_states[tp->id].estimate.y;
+					pthread_mutex_unlock(&kalman_mutex[tp->id]);
+
+					// Choose new target and final time
+					xf = get_uniform_generic(L, WORLD_W - L);
+					yf = get_uniform_generic(L, WORLD_H - L);
+
+					tf = sqrt(pow(xf - x0, 2) + pow(yf - y0, 2));
+					// Not too short
+					if (tf < 2)
+						tf = 2;
+					// Not too long
+					if (tf > 5)
+						tf = 5;
+
+					// Update guidance parameters
+					pthread_mutex_lock(&guidance_mutex[tp->id]);
+					traj_states[tp->id].current_time = 0;
+					traj_states[tp->id].final_time = tf;
+					traj_states[tp->id].x0 = x0;
+					traj_states[tp->id].y0 = y0;
+					traj_states[tp->id].xf = xf;
+					traj_states[tp->id].yf = yf;
+					pthread_mutex_unlock(&guidance_mutex[tp->id]);
+				}
 
 			}
 

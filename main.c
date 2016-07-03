@@ -11,11 +11,6 @@
 #include "simulator.h"
 #include "gui.h"
 
-
-//------------------------------------------------------------------------------
-//	GLOABAL VARIABLE DEFINITIONS
-//------------------------------------------------------------------------------
-
 //------------------------------------------------------------------------------
 //	Function create_task
 // 	creates a task given the task name, parameters, id, attribute, body,
@@ -83,7 +78,6 @@ int 	i, error;
 			perror("(pthread_user) Error:");
 		}
 
-
 		return 0;
 }
 
@@ -93,7 +87,7 @@ int 	i, error;
 static
 int		init()
 {
-int		i, error;
+int	  	error;
 
 		// allegro
 		allegro_init();
@@ -104,6 +98,9 @@ int		i, error;
 		// init selected quadrotor
 		init_selected_quad();
 
+		// init guidance switches
+		init_guidance_switches();
+
 		// random number generation
 		init_random_generator();
 
@@ -111,8 +108,7 @@ int		i, error;
 		mutex_init();
 
 		// dynamics, ekf and trajectories initial conditions
-		for (i = 0; i < MAX_QUADROTORS; i++)
-			set_initial_condition(i);
+		set_initial_conditions();
 
 		// threads
 		error = create_task("Guidance", guidance_tp, guidance_tid,\

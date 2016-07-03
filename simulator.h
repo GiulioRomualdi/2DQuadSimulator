@@ -1,6 +1,8 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
+#include <pthread.h>
+
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
@@ -54,6 +56,11 @@ struct	trajectory_state {
 		float			yf;				// in m
 };
 
+struct	guidance_switch{
+		int				active;			// guidance system state
+		pthread_mutex_t	active_mutex;	// mutex for active
+};
+
 struct	force {
 		float			force_left;		// left force in N
 		float			force_right;	// right force in N
@@ -66,6 +73,7 @@ extern struct state states[MAX_QUADROTORS];
 extern struct state	desired_trajectories[MAX_QUADROTORS];
 extern struct kalman_state kalman_states[MAX_QUADROTORS];
 extern struct trajectory_state traj_states[MAX_QUADROTORS];
+extern struct guidance_switch guid_switches[MAX_QUADROTORS];
 extern struct force forces[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
@@ -73,9 +81,16 @@ extern struct force forces[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable 'guid_switch'
+//------------------------------------------------------------------------------
+void	init_guidance_switches();
+int		get_guidance_state(int index);
+void	switch_guidance(int index);
+
+//------------------------------------------------------------------------------
 //	THREAD CODE FUNCTIONS
 //------------------------------------------------------------------------------
-void	set_initial_condition(int i);
+void	set_initial_conditions();
 void*	regulator_task(void* arg);
 void*	guidance_task(void* arg);
 
