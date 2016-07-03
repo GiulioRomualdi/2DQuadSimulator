@@ -164,6 +164,7 @@ void	init_selected_quad()
 //	Function get_selected_quad
 //	returns the index of selected quadrotor
 //------------------------------------------------------------------------------
+static
 int		get_selected_quad()
 {
 int		index;
@@ -179,6 +180,7 @@ int		index;
 //	Function previous_selected_quad
 //	decreases the index of the selected quadrotor
 //------------------------------------------------------------------------------
+static
 void	previous_selected_quad()
 {
 		pthread_mutex_lock(&(selected_quad.mutex));
@@ -190,6 +192,7 @@ void	previous_selected_quad()
 //	Function next_selected_quad
 //	increases the index of the selected quadrotor
 //------------------------------------------------------------------------------
+static
 void	next_selected_quad()
 {
 		pthread_mutex_lock(&(selected_quad.mutex));
@@ -722,7 +725,7 @@ float	width, height, h_upper, h_lower, text_h_offset;
 
 		for (i = 1; (height = height_base + i * scale * tick) <= h_upper; i++)
 			textprintf_right_ex(screen, font_10, width - 2, height + text_h_offset,
-								text_color, -1, "%.2f", i * tick);
+								text_color, -1, "-%.2f", i * tick);
 }
 
 //------------------------------------------------------------------------------
@@ -826,7 +829,10 @@ float	x, y, xf, yf, tof;
 		tof = traj_states[i].final_time;
 		pthread_mutex_unlock(&guidance_mutex[i]);
 
-		textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active:");
+		if (get_guidance_state(i))
+			textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active: Yes");
+		else
+			textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active: No");
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\
 					  "Next target: [%.2f", xf);
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\
@@ -926,6 +932,9 @@ void	exec_user_command()
 		else if(key[KEY_N]) {
 			next_selected_quad();
 			plot_reset_all();
+		}
+		else if(key[KEY_G]) {
+			switch_guidance(get_selected_quad());
 		}
 		else if(key[KEY_Q])
 			exit(EXIT_SUCCESS);
