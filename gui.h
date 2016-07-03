@@ -27,6 +27,7 @@
 struct	plot_data {
 		float				buffer[BUFF_SIZE];	// data
 		int					index;				// index of the oldest sample in buffer
+		pthread_mutex_t		index_mutex;		// mutex for index
 };
 typedef struct plot_data plot_data;
 
