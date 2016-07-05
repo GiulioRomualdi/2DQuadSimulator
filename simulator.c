@@ -95,6 +95,62 @@ void	switch_guidance(int index)
 }
 
 //------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable with type 'trajectory_state'
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function copy_traj_param
+//------------------------------------------------------------------------------
+static
+void	copy_traj_param(struct trajectory_state *src,\
+						struct trajectory_state *dst,\
+						pthread_mutex_t *mutex)
+{
+		pthread_mutex_lock(mutex);
+		*dst = *src;
+		pthread_mutex_unlock(mutex);
+}
+
+//------------------------------------------------------------------------------
+//	Function update_trajectory_time
+//	update the current time of the trajectory 
+//------------------------------------------------------------------------------
+static
+void	update_trajectory_time(int i, float time_step)
+{
+		pthread_mutex_lock(&guidance_mutex[i]);
+		traj_states[i].current_time += time_step;
+		pthread_mutex_unlock(&guidance_mutex[i]);
+}
+
+//------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable with type 'state'
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function copy_state
+//------------------------------------------------------------------------------
+static
+void 	copy_state(state *src, state *dst, pthread_mutex_t *mutex)
+{
+		pthread_mutex_lock(mutex);
+		*dst = *src;
+		pthread_mutex_unlock(mutex);
+}
+
+//------------------------------------------------------------------------------
+//	Function copy_forces
+//------------------------------------------------------------------------------
+static
+void 	copy_forces(float src[2], struct force *dst,  pthread_mutex_t *mutex)
+{
+		pthread_mutex_lock(mutex);
+		dst->force_left = src[0];
+		dst->force_right = src[1];
+		pthread_mutex_unlock(mutex);
+}
+
+//------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION
 //------------------------------------------------------------------------------
 
@@ -405,63 +461,32 @@ float	f;
 		return f;
 }
 
-/* //------------------------------------------------------------------------------ */
-/* //	Function get_trajectory_parameters */
-/* //	returns the trajectory current parameters for the i-th quadrotor */
-/* //	in a 'trajectory_state' struct */
-/* //------------------------------------------------------------------------------ */
-/* static */
-/* struct trajectory_state	get_trajectory_parameters(int i, float time_step, state* state_, float input[2]) */
-/* { */
-/* } */
-
-/* //------------------------------------------------------------------------------ */
-/* //	Function update_trajectory:time */
-/* //	returns the guidance current parameters in a 'trajectory_state' struct */
-/* //------------------------------------------------------------------------------ */
-/* static */
-/* void	update_trajectory_time(int i, float time_step, state* state_, float input[2]) */
-/* { */
-/* } */
 //------------------------------------------------------------------------------
 //	Function get_reference_state
 //	evaluate the current reference state for the i-th quadrotor
-//	according to the initial and final time and positions (x0, y0, xf, yf)
-//	and the simulation time_step
 //	store the result in the 'state' and 'input'
 //------------------------------------------------------------------------------
 static
 void	get_reference_state(int i, float time_step, state* state_, float input[2])
 {
-float	current_time, final_time, x0, y0, xf, yf;
+struct trajectory_state traj_p;
 
-		// Save the guidance parameters using mutual exclusion
-		pthread_mutex_lock(&guidance_mutex[i]);
-		current_time = traj_states[i].current_time;
-		// Update the current time for the next call
-		traj_states[i].current_time += time_step;
-		//
-		final_time = traj_states[i].final_time;
-		x0 = traj_states[i].x0;
-		xf = traj_states[i].xf;
-		y0 = traj_states[i].y0;
-		yf = traj_states[i].yf;
-		pthread_mutex_unlock(&guidance_mutex[i]);
+		copy_traj_param(&traj_states[i], &traj_p, &guidance_mutex[i]);
 
-		if (current_time >= final_time)
-			current_time = final_time;
+		if (traj_p.current_time >= traj_p.final_time)
+			traj_p.current_time = traj_p.final_time;
 
 		// Store the state
-		state_->x = trajectory(current_time, final_time, x0, xf);
-		state_->vx = trajectory_velocity(current_time, final_time, x0, xf);
-		state_->y = trajectory(current_time, final_time, y0, yf);
-		state_->vy = trajectory_velocity(current_time, final_time, y0, yf);
-		state_->theta = pitch(current_time, final_time, x0, y0, xf, yf);
-		state_->vtheta = pitch_rate(current_time, final_time, x0, y0, xf, yf);
+		state_->x = trajectory(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.xf);
+		state_->vx = trajectory_velocity(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.xf);
+		state_->y = trajectory(traj_p.current_time, traj_p.final_time, traj_p.y0, traj_p.yf);
+		state_->vy = trajectory_velocity(traj_p.current_time, traj_p.final_time, traj_p.y0, traj_p.yf);
+		state_->theta = pitch(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
+		state_->vtheta = pitch_rate(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
 
 		// Store the input
-		input[0] = force_left(current_time, final_time, x0, y0, xf, yf);
-		input[1] = force_right(current_time, final_time, x0, y0, xf, yf);
+		input[0] = force_left(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
+		input[1] = force_right(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
 }
 
 //------------------------------------------------------------------------------
@@ -840,12 +865,11 @@ state	reference_trajectory, estimate, state;
 			set_start_time(tp);
 
 			// Recover the last evaluated state
-   			pthread_mutex_lock(&dynamics_mutex[tp->id]);
-			state = states[tp->id];
-			pthread_mutex_unlock(&dynamics_mutex[tp->id]);
+			copy_state(&states[tp->id], &state, &dynamics_mutex[tp->id]);
 
 			// Get reference trajectory and reference input
 			get_reference_state(tp->id, period, &reference_trajectory, reference_input);
+			update_trajectory_time(tp->id, period);
 
 			// Evaluate the real input to the system
 			feedback_control(kalman_states[tp->id].estimate, reference_trajectory,\
@@ -859,32 +883,16 @@ state	reference_trajectory, estimate, state;
 				&estimate);
 
 			// Store inside global variables
-   			pthread_mutex_lock(&kalman_mutex[tp->id]);
-			kalman_states[tp->id].estimate = estimate;
-			pthread_mutex_unlock(&kalman_mutex[tp->id]);
+			copy_state(&estimate, &(kalman_states[tp->id].estimate), &kalman_mutex[tp->id]);
+			copy_state(&state, &states[tp->id], &dynamics_mutex[tp->id]);
+			copy_state(&reference_trajectory, &desired_trajectories[tp->id], &desired_traj_mutex[tp->id]);
+			copy_forces(real_input, &forces[tp->id], &force_mutex[tp->id]);
 
-   			pthread_mutex_lock(&dynamics_mutex[tp->id]);
-			states[tp->id] = state;
-			pthread_mutex_unlock(&dynamics_mutex[tp->id]);
-
-   			pthread_mutex_lock(&force_mutex[tp->id]);
-			forces[tp->id].force_left = real_input[0];
-			forces[tp->id].force_right = real_input[1];
-			pthread_mutex_unlock(&force_mutex[tp->id]);
-
-   			pthread_mutex_lock(&desired_traj_mutex[tp->id]);
-			desired_trajectories[tp->id] = reference_trajectory;
-			pthread_mutex_unlock(&desired_traj_mutex[tp->id]);
-
-			// Handle thread parameters
-			set_finish_time(tp);
-			update_wcet(tp);
-			deadline_miss(tp);
-			wait_for_period(tp);
-			update_activation_time(tp);
-			update_abs_deadline(tp);
+			thread_loop_end(tp);
 		}
 }
+
+
 
 //------------------------------------------------------------------------------
 //	Function guidance_task
@@ -892,8 +900,9 @@ state	reference_trajectory, estimate, state;
 void*	guidance_task(void* arg)
 {
 struct task_par* tp;
-float	x0, y0, xf, yf;
-float	current_time, final_time, tf;
+struct trajectory_state traj_p, traj_new_p;
+state	current_state;
+float	tf;
 
 		tp = (struct task_par*)arg;
 
@@ -905,25 +914,20 @@ float	current_time, final_time, tf;
 
 			if (get_guidance_state(tp->id)) {
 
-				// Get the current and final time of the trajectory
-				pthread_mutex_lock(&guidance_mutex[tp->id]);
-				current_time = traj_states[tp->id].current_time;
-				final_time = traj_states[tp->id].final_time;
-				pthread_mutex_unlock(&guidance_mutex[tp->id]);
+				copy_traj_param(&traj_states[tp->id], &traj_p, &guidance_mutex[tp->id]);
 
-				if (current_time > final_time + GUID_WAIT_TIME) {
+				if (traj_p.current_time > traj_p.final_time + GUID_WAIT_TIME) {
 
 					// Get the current state of the quadrotor
-					pthread_mutex_lock(&kalman_mutex[tp->id]);
-					x0 = kalman_states[tp->id].estimate.x;
-					y0 = kalman_states[tp->id].estimate.y;
-					pthread_mutex_unlock(&kalman_mutex[tp->id]);
+					copy_state(&(kalman_states[tp->id].estimate), &current_state, &kalman_mutex[tp->id]);
 
-					// Choose new target and final time
-					xf = get_uniform_generic(L, WORLD_W - L);
-					yf = get_uniform_generic(L, WORLD_H - L);
+					// Set new trajectory parameters
+					traj_new_p.x0 = current_state.x;
+					traj_new_p.y0 = current_state.y;
+					traj_new_p.xf = get_uniform_generic(L, WORLD_W - L);
+					traj_new_p.yf = get_uniform_generic(L, WORLD_H - L);
 
-					tf = sqrt(pow(xf - x0, 2) + pow(yf - y0, 2));
+					tf = sqrt(pow(traj_new_p.xf - traj_new_p.x0, 2) + pow(traj_new_p.yf - traj_new_p.y0, 2));
 					// Not too short
 					if (tf < 2)
 						tf = 2;
@@ -931,25 +935,15 @@ float	current_time, final_time, tf;
 					if (tf > 5)
 						tf = 5;
 
+					traj_new_p.current_time = 0;
+					traj_new_p.final_time = tf;
+
 					// Update guidance parameters
-					pthread_mutex_lock(&guidance_mutex[tp->id]);
-					traj_states[tp->id].current_time = 0;
-					traj_states[tp->id].final_time = tf;
-					traj_states[tp->id].x0 = x0;
-					traj_states[tp->id].y0 = y0;
-					traj_states[tp->id].xf = xf;
-					traj_states[tp->id].yf = yf;
-					pthread_mutex_unlock(&guidance_mutex[tp->id]);
+					copy_traj_param(&traj_new_p, &traj_states[tp->id], &guidance_mutex[tp->id]);
 				}
 
 			}
 
-			// Handle thread parameters
-			set_finish_time(tp);
-			update_wcet(tp);
-			deadline_miss(tp);
-			wait_for_period(tp);
-			update_activation_time(tp);
-			update_abs_deadline(tp);
+			thread_loop_end(tp);
 		}
 }

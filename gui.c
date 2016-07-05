@@ -902,13 +902,7 @@ task_par*	tp;
 				print_performace_info();
 				print_guidance_info();
 
-				// Handle thread parameters
-				set_finish_time(tp);
-				update_wcet(tp);
-				deadline_miss(tp);
-				wait_for_period(tp);
-				update_activation_time(tp);
-				update_abs_deadline(tp);
+				thread_loop_end(tp);
 			}
 }
 

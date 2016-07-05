@@ -497,6 +497,7 @@ struct timespec time;
 //	Function update_activation_time
 //	updates the activation time
 //-----------------------------------------------------------------------------
+static
 void	update_activation_time(struct task_par* tp)
 {
 		time_add_delta(&(tp->activation_time), tp->period);
@@ -506,6 +507,7 @@ void	update_activation_time(struct task_par* tp)
 //	Function update_abs_deadline
 //	updates the absolute deadline
 //-----------------------------------------------------------------------------
+static
 void	update_abs_deadline(struct task_par* tp)
 {
 		time_add_delta(&(tp->abs_deadline), tp->period);
@@ -515,6 +517,7 @@ void	update_abs_deadline(struct task_par* tp)
 //	Function wait_for_period
 //	suspends the thread until the next activation
 //-----------------------------------------------------------------------------
+static
 void	wait_for_period(struct task_par* tp)
 {
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &(tp->activation_time),\
@@ -527,6 +530,7 @@ void	wait_for_period(struct task_par* tp)
 //	returns 1 in case of deadline miss and increments 'dmiss'
 //	otherwise it returns 0
 //-----------------------------------------------------------------------------
+static
 int		deadline_miss(struct task_par* tp)
 {
 		if(time_cmp(&(tp->finish_time), &(tp->abs_deadline)) > 0) {
@@ -555,6 +559,7 @@ struct timespec time;
 //	Function set_finish_time
 //	set the start time of the task
 //-----------------------------------------------------------------------------
+static
 void	set_finish_time(struct task_par* tp)
 {
 struct timespec time;
@@ -576,6 +581,7 @@ void	zero_wcet(struct task_par* tp)
 //	Function update_wcet
 //	update the worst case execution time of the task
 //-----------------------------------------------------------------------------
+static
 void	update_wcet(struct task_par* tp)
 {
 struct timespec diff;
@@ -601,4 +607,18 @@ struct timespec	time;
 		clock_gettime(CLOCK_MONOTONIC, &time);
 		time_add_delta(&time, tp->period);
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, NULL);
+}
+
+//-----------------------------------------------------------------------------
+//	Function thread_loop_end
+//	updates thread parameters and waits for the next attivation
+//-----------------------------------------------------------------------------
+void	thread_loop_end(struct task_par* tp)
+{
+		set_finish_time(tp);
+		update_wcet(tp);
+		deadline_miss(tp);
+		wait_for_period(tp);
+		update_activation_time(tp);
+		update_abs_deadline(tp);
 }

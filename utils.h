@@ -105,13 +105,8 @@ float	time_to_ms(struct timespec* time);
 //-----------------------------------------------------------------------------
 void	init_timespecs(task_par* tp);
 void	set_start_time(task_par* tp);
-void	set_finish_time(task_par* tp);
 void	zero_wcet(task_par* tp);
-void	update_activation_time(task_par* tp);
-void	update_abs_deadline(task_par* tp);
-void	update_wcet(task_par* tp);
-void	wait_for_period(task_par* tp);
-int		deadline_miss(task_par* tp);
 void	mutex_init();
 void	aperiodic_wait(struct task_par* tp);
+void	thread_loop_end(struct task_par* tp);
 #endif
