@@ -37,6 +37,7 @@
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
+
 // Discrete Linear Quadratic (LQ) gain matrix
 float	K_LQ[2][6] = {{-1.5295, -2.2586, -15.1509, -15.7189, 8.7459, 1.6575},
 					  {1.5295, 2.2586, -15.1509, -15.7189, -8.7459, -1.6575}};
@@ -151,7 +152,7 @@ void 	copy_forces(float src[2], struct force *dst,  pthread_mutex_t *mutex)
 }
 
 //------------------------------------------------------------------------------
-//	TRAJECTORY GENERATION
+//	TRAJECTORY GENERATION FUNCTIONS
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -477,20 +478,28 @@ struct trajectory_state traj_p;
 			traj_p.current_time = traj_p.final_time;
 
 		// Store the state
-		state_->x = trajectory(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.xf);
-		state_->vx = trajectory_velocity(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.xf);
-		state_->y = trajectory(traj_p.current_time, traj_p.final_time, traj_p.y0, traj_p.yf);
-		state_->vy = trajectory_velocity(traj_p.current_time, traj_p.final_time, traj_p.y0, traj_p.yf);
-		state_->theta = pitch(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
-		state_->vtheta = pitch_rate(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
+		state_->x = trajectory(traj_p.current_time, traj_p.final_time,\
+							   traj_p.x0, traj_p.xf);
+		state_->vx = trajectory_velocity(traj_p.current_time, traj_p.final_time,\
+										 traj_p.x0, traj_p.xf);
+		state_->y = trajectory(traj_p.current_time, traj_p.final_time,\
+							   traj_p.y0, traj_p.yf);
+		state_->vy = trajectory_velocity(traj_p.current_time, traj_p.final_time,\
+										 traj_p.y0, traj_p.yf);
+		state_->theta = pitch(traj_p.current_time, traj_p.final_time,\
+							  traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
+		state_->vtheta = pitch_rate(traj_p.current_time, traj_p.final_time,\
+									traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
 
 		// Store the input
-		input[0] = force_left(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
-		input[1] = force_right(traj_p.current_time, traj_p.final_time, traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
+		input[0] = force_left(traj_p.current_time, traj_p.final_time,\
+							  traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
+		input[1] = force_right(traj_p.current_time, traj_p.final_time,\
+							   traj_p.x0, traj_p.y0, traj_p.xf, traj_p.yf);
 }
 
 //------------------------------------------------------------------------------
-// 	SYSTEM DYNAMICS, SYSTEM IO, SYSTEM FEEDBACK
+// 	SYSTEM DYNAMICS, SYSTEM IO, SYSTEM FEEDBACK FUNCTIONS
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -587,7 +596,7 @@ float	du[2][1];
 }
 
 //------------------------------------------------------------------------------
-//	EXTENDED KALMAN FILTER
+//	EXTENDED KALMAN FILTER FUNCTIONS
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------

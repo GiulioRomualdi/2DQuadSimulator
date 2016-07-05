@@ -68,7 +68,7 @@ extern pthread_mutex_t	selected_quad_mutex;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-//	MATRIX HANDLING FUNCTION
+//	MATRIX HANDLING FUNCTIONS
 //------------------------------------------------------------------------------
 void	mat_zero(int n, int m, float matrix[][m]);
 void	mat_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m]);
@@ -83,7 +83,7 @@ void	translate(float matrix[3][3], float x, float y);
 void	scale(float matrix[3][3], float k);
 
 //------------------------------------------------------------------------------
-//	RANDOM NUMBERS GENERATION
+//	RANDOM NUMBERS GENERATION FUNCTIONS
 //------------------------------------------------------------------------------
 void	init_random_generator();
 float	get_uniform(float T);
@@ -96,12 +96,12 @@ float	get_gaussian(float std);
 int		modulo(int a, int b);
 
 //-----------------------------------------------------------------------------
-//	TIMESPEC HANDLING
+//	TIMESPEC FUNCTIONS
 //-----------------------------------------------------------------------------
 float	time_to_ms(struct timespec* time);
 
 //-----------------------------------------------------------------------------
-//	THREAD MANAGEMENT
+//	THREAD MANAGEMENT FUNCTIONS
 //-----------------------------------------------------------------------------
 void	init_timespecs(task_par* tp);
 void	set_start_time(task_par* tp);
@@ -109,4 +109,9 @@ void	zero_wcet(task_par* tp);
 void	mutex_init();
 void	aperiodic_wait(struct task_par* tp);
 void	thread_loop_end(struct task_par* tp);
+int		create_task(char* task_name, task_par tp[], pthread_t tid[],\
+					pthread_attr_t attr[], void*(*task_body)(void*),\
+					int period, int deadline, int replica);
+int		wait_for_tasks_end();
+
 #endif

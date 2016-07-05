@@ -2,10 +2,13 @@
 //	UTILS.C
 //------------------------------------------------------------------------------
 
+#include <pthread.h>
+#include <error.h>
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "utils.h"
 #include "simulator.h"
 
@@ -30,7 +33,7 @@ task_par		user_tp[1];
 pthread_t		user_tid[1];
 pthread_attr_t	user_attr[1];
 
-//	Mutex required for mutual exclusion
+// Mutex required for mutual exclusion
 pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
 pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
 pthread_mutex_t kalman_mutex[MAX_QUADROTORS];
@@ -45,8 +48,7 @@ pthread_mutex_t	selected_quad_mutex;
 
 //------------------------------------------------------------------------------
 //	Function mat_zero
-//	set to zero all the elements of the given matrix
-//	MOVE ME OUT OF HERE!
+//	sets to zero all the elements of the given matrix
 //------------------------------------------------------------------------------
 void	mat_zero(int n, int m, float matrix[][m])
 {
@@ -74,7 +76,7 @@ int		i, j;
 //------------------------------------------------------------------------------
 //	Function mat_sum_scalar
 //	evaluates the sum of matrices 'op1' + alpha * 'op2'
-//	and put the result in 'dst'
+//	and puts the result in 'dst'
 //------------------------------------------------------------------------------
 static
 void	mat_sum_scalar(int n, int m, float op1[][m], float op2[][m],\
@@ -90,7 +92,7 @@ int 	i, j;
 //------------------------------------------------------------------------------
 //	Function mat sum
 //	evaluates the sum of two matrices 'op1' and 'op2'
-//	and put the result in 'dst'
+//	and puts the result in 'dst'
 //------------------------------------------------------------------------------
 void	mat_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 {
@@ -100,7 +102,7 @@ void	mat_sum(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 //------------------------------------------------------------------------------
 //	Function mat sub
 //	evaluates the difference of two matrices 'op1' and 'op2'
-//	and put the result in 'dst'
+//	and puts the result in 'dst'
 //------------------------------------------------------------------------------
 void	mat_sub(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 {
@@ -110,7 +112,7 @@ void	mat_sub(int n, int m, float op1[][m], float op2[][m], float dst[][m])
 //------------------------------------------------------------------------------
 //	Function mat_mul
 //	evaluates the product of two matrices 'op1' and 'op2'
-//	and put the result in 'dst'
+//	and puts the result in 'dst'
 //------------------------------------------------------------------------------
 void	mat_mul(int op1_n, int op1_m, float op1[][op1_m],\
 					int op2_n, int op2_m, float op2[][op2_m],\
@@ -135,7 +137,7 @@ float	op1_copy[op1_n][op1_m], op2_copy[op2_n][op2_m];
 //------------------------------------------------------------------------------
 //	Function mat_transpose
 //	evaluates the transpose of the matrix 'src'
-//	and put the result in 'dst'
+//	and puts the result in 'dst'
 //------------------------------------------------------------------------------
 void	mat_transpose(int n, int m, float src[][m], float dst[][n])
 {
@@ -191,7 +193,7 @@ float	m[3][3];
 //------------------------------------------------------------------------------
 //	Function mat_3_inv
 //	evaluates the inverse of the 3 by 3 matrix 'matrix' (closed form used)
-//	and put the result in 'dst'
+//	and puts the result in 'dst'
 //------------------------------------------------------------------------------
 void	mat_3_inv(float matrix[3][3], float dst[3][3])
 {
@@ -258,7 +260,7 @@ void	scale(float matrix[3][3], float k)
 }
 
 //------------------------------------------------------------------------------
-//	RANDOM NUMBERS GENERATION
+//	RANDOM NUMBERS GENERATION FUNCTIONS
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -360,12 +362,12 @@ int		r;
 }
 
 //------------------------------------------------------------------------------
-//	TIME HANDLING
+//	TIMESPEC FUNCTIONS
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	Function time_to_ms
-//	Returns the time represented by the timespec time in milliseconds
+//	returns the time represented by the timespec time in milliseconds
 //------------------------------------------------------------------------------
 float	time_to_ms(struct timespec *time)
 {
@@ -454,7 +456,7 @@ int		time_cmp(struct timespec* t1, struct timespec* t2)
 }
 
 //-----------------------------------------------------------------------------
-//	THREAD MANAGEMENT
+//	THREAD MANAGEMENT FUNCTIONS
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -621,4 +623,73 @@ void	thread_loop_end(struct task_par* tp)
 		wait_for_period(tp);
 		update_activation_time(tp);
 		update_abs_deadline(tp);
+}
+
+//------------------------------------------------------------------------------
+//	Function create_task
+// 	creates a task given the task name, parameters, id, attribute, body,
+//	period, relative deadline and the no. of replica required;
+//	return 0 if success, one of the ERRNO otherwise
+//------------------------------------------------------------------------------
+int		create_task(char* task_name, task_par tp[], pthread_t tid[],\
+					pthread_attr_t attr[], void*(*task_body)(void*),\
+					int period, int deadline, int replica)
+{
+int		i;
+int 	error;
+
+		for(i = 0; i < replica; i++) {
+			tp[i].id = i;
+			tp[i].period = period;
+			tp[i].deadline = deadline;
+			tp[i].dmiss = 0;
+			strcpy(tp[i].task_name, task_name);
+			pthread_mutex_init(&tp[i].mutex, NULL);
+			zero_wcet(&(tp[i]));
+
+			error = pthread_attr_init(&attr[i]);
+			if (error != 0) {
+				perror("(attr_init) Error:");
+				return error;
+			}
+
+			error = pthread_create(&tid[i], &attr[i], task_body, &tp[i]);
+			if (error != 0) {
+				perror("(pthread_create) Error:");
+				return error;
+			}
+		}
+		return 0;
+}
+
+//------------------------------------------------------------------------------
+//	Function wait_for_task_end
+//------------------------------------------------------------------------------
+int		wait_for_tasks_end()
+{
+int 	i, error;
+
+		for(i = 0; i < MAX_QUADROTORS; i++) {
+			error = pthread_join(regulator_tid[i], NULL);
+			if (error != 0) {
+				perror("(pthread_join) Error:");
+				return error;
+			}
+
+			error = pthread_join(guidance_tid[i], NULL);
+			if (error != 0) {
+				perror("(pthread_join) Error:");
+				return error;
+			}
+		}
+		error = pthread_join(gui_tid[0], NULL);
+		if (error != 0) {
+			perror("(pthread_join) Error:");
+		}
+		error = pthread_join(user_tid[0], NULL);
+		if (error != 0) {
+			perror("(pthread_user) Error:");
+		}
+
+		return 0;
 }
