@@ -31,13 +31,6 @@ struct	plot_data {
 };
 typedef struct plot_data plot_data;
 
-struct	selected_quadrotor {
-		int					index;				// index
-		pthread_mutex_t		mutex;				// mutex
-
-};
-typedef struct selected_quadrotor selected_quadrotor;
-
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE EXTERN DECLARATIONS
 //------------------------------------------------------------------------------

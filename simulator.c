@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	SIMULATOR.C:	DESCRIPTION
+//	SIMULATOR.C
 //------------------------------------------------------------------------------
 
 #include <math.h>
@@ -38,14 +38,10 @@
 //	GLOABAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
 // Discrete Linear Quadratic (LQ) gain matrix
+float	K_LQ[2][6] = {{-1.5295, -2.2586, -15.1509, -15.7189, 8.7459, 1.6575},
+					  {1.5295, 2.2586, -15.1509, -15.7189, -8.7459, -1.6575}};
 
-//T = 1ms
-/* float K_LQ[2][6] = {{-10.5196, -15.3011, -17.9183, -18.4205, 57.4907, 10.6342}, */
-/* 					{10.5196, 15.3011, -17.9183, -18.4205, -57.4907, -10.6342}}; */
-
-//T = 10ms
-float K_LQ[2][6] = {{-1.5295, -2.2586, -15.1509, -15.7189, 8.7459, 1.6575},
-					{1.5295, 2.2586, -15.1509, -15.7189, -8.7459, -1.6575}};
+int		guid_switches[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	GLOABAL DATA STRUCTURES DEFINITIONS
@@ -54,7 +50,6 @@ struct state states[MAX_QUADROTORS];
 struct state desired_trajectories[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
 struct trajectory_state traj_states[MAX_QUADROTORS];
-struct guidance_switch guid_switches[MAX_QUADROTORS];
 struct force forces[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
@@ -69,10 +64,8 @@ void	init_guidance_switches()
 {
 int		i;
 
-		for (i = 0; i < MAX_QUADROTORS; i++) {
-			pthread_mutex_init(&(guid_switches[i].active_mutex), NULL);
-			guid_switches[i].active = 0;
-		}
+		for (i = 0; i < MAX_QUADROTORS; i++)
+			guid_switches[i] = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -83,9 +76,9 @@ int		get_guidance_state(int index)
 {
 int		value;
 
-		pthread_mutex_lock(&(guid_switches[index].active_mutex));
-		value = guid_switches[index].active;
-		pthread_mutex_unlock(&(guid_switches[index].active_mutex));
+		pthread_mutex_lock(&guid_switches_mutex[index]);
+		value = guid_switches[index];
+		pthread_mutex_unlock(&guid_switches_mutex[index]);
 
 		return value;
 }
@@ -96,10 +89,11 @@ int		value;
 //------------------------------------------------------------------------------
 void	switch_guidance(int index)
 {
-		pthread_mutex_lock(&(guid_switches[index].active_mutex));
-		guid_switches[index].active = (guid_switches[index].active + 1) % 2;
-		pthread_mutex_unlock(&(guid_switches[index].active_mutex));
+		pthread_mutex_lock(&guid_switches_mutex[index]);
+		guid_switches[index] = (guid_switches[index] + 1) % 2;
+		pthread_mutex_unlock(&guid_switches_mutex[index]);
 }
+
 //------------------------------------------------------------------------------
 //	TRAJECTORY GENERATION
 //------------------------------------------------------------------------------
@@ -211,7 +205,7 @@ float 	a;
 
 //------------------------------------------------------------------------------
 //	Function trajectory_jerk
-// 	returns the jerk (third derivative of position) of a point 
+// 	returns the jerk (third derivative of position) of a point
 //	along the desired trajectory
 //	given the current time t,
 // 	the time of flight tf and
@@ -411,6 +405,24 @@ float	f;
 		return f;
 }
 
+/* //------------------------------------------------------------------------------ */
+/* //	Function get_trajectory_parameters */
+/* //	returns the trajectory current parameters for the i-th quadrotor */
+/* //	in a 'trajectory_state' struct */
+/* //------------------------------------------------------------------------------ */
+/* static */
+/* struct trajectory_state	get_trajectory_parameters(int i, float time_step, state* state_, float input[2]) */
+/* { */
+/* } */
+
+/* //------------------------------------------------------------------------------ */
+/* //	Function update_trajectory:time */
+/* //	returns the guidance current parameters in a 'trajectory_state' struct */
+/* //------------------------------------------------------------------------------ */
+/* static */
+/* void	update_trajectory_time(int i, float time_step, state* state_, float input[2]) */
+/* { */
+/* } */
 //------------------------------------------------------------------------------
 //	Function get_reference_state
 //	evaluate the current reference state for the i-th quadrotor

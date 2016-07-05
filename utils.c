@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	UTILS.C:	DESCRIPTION
+//	UTILS.C
 //------------------------------------------------------------------------------
 
 #include <time.h>
@@ -36,6 +36,8 @@ pthread_mutex_t dynamics_mutex[MAX_QUADROTORS];
 pthread_mutex_t kalman_mutex[MAX_QUADROTORS];
 pthread_mutex_t force_mutex[MAX_QUADROTORS];
 pthread_mutex_t desired_traj_mutex[MAX_QUADROTORS];
+pthread_mutex_t	guid_switches_mutex[MAX_QUADROTORS];
+pthread_mutex_t	selected_quad_mutex;
 
 //------------------------------------------------------------------------------
 //	MATRIX HANDLING FUNCTION
@@ -469,7 +471,9 @@ int		i;
 			pthread_mutex_init(&kalman_mutex[i], NULL);
 			pthread_mutex_init(&force_mutex[i], NULL);
 			pthread_mutex_init(&desired_traj_mutex[i], NULL);
+			pthread_mutex_init(&guid_switches_mutex[i], NULL);
 		 }
+            pthread_mutex_init(&selected_quad_mutex, NULL);
 }
 
 //-----------------------------------------------------------------------------

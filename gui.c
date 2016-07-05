@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	GUI.C:	DESCRIPTION
+//	GUI.C
 //------------------------------------------------------------------------------
 
 #include <allegro.h>
@@ -143,8 +143,8 @@ BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap,\
 		    *log_bitmap, *guidance_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est,\
 		    plot_theta_track;
-FONT				*font_16, *font_12, *font_11, *font_10, *font_10_mono;
-selected_quadrotor	selected_quad;
+FONT		*font_16, *font_12, *font_11, *font_10;
+int			selected_quad;
 
 //------------------------------------------------------------------------------
 //	FUNCTIONS that modifies the variable 'selected_quadrotor'
@@ -156,8 +156,7 @@ selected_quadrotor	selected_quad;
 //------------------------------------------------------------------------------
 void	init_selected_quad()
 {
-		selected_quad.index = 0;
-		pthread_mutex_init(&(selected_quad.mutex), NULL);
+		selected_quad = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -169,9 +168,9 @@ int		get_selected_quad()
 {
 int		index;
 
-		pthread_mutex_lock(&(selected_quad.mutex));
-		index = selected_quad.index;
-		pthread_mutex_unlock(&(selected_quad.mutex));
+		pthread_mutex_lock(&selected_quad_mutex);
+		index = selected_quad;
+		pthread_mutex_unlock(&selected_quad_mutex);
 
 		return index;
 }
@@ -183,9 +182,9 @@ int		index;
 static
 void	previous_selected_quad()
 {
-		pthread_mutex_lock(&(selected_quad.mutex));
-		selected_quad.index = modulo(selected_quad.index - 1, MAX_QUADROTORS);
-		pthread_mutex_unlock(&(selected_quad.mutex));
+		pthread_mutex_lock(&selected_quad_mutex);
+		selected_quad = modulo(selected_quad - 1, MAX_QUADROTORS);
+		pthread_mutex_unlock(&selected_quad_mutex);
 }
 
 //------------------------------------------------------------------------------
@@ -195,9 +194,9 @@ void	previous_selected_quad()
 static
 void	next_selected_quad()
 {
-		pthread_mutex_lock(&(selected_quad.mutex));
-		selected_quad.index = modulo(selected_quad.index + 1, MAX_QUADROTORS);
-		pthread_mutex_unlock(&(selected_quad.mutex));
+		pthread_mutex_lock(&selected_quad_mutex);
+		selected_quad = modulo(selected_quad + 1, MAX_QUADROTORS);
+		pthread_mutex_unlock(&selected_quad_mutex);
 }
 
 //------------------------------------------------------------------------------

@@ -1,8 +1,6 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
-#include <pthread.h>
-
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
@@ -10,7 +8,7 @@
 #define	M					1.0				// quadcopter mass in Kg
 #define IZ					(M * L * L /12)	// moment of inertia around axis x
 #define G					9.81			// gravitational acceleration in m/s^2
-#define MAX_QUADROTORS		5	   			// max number of quadrotor
+#define MAX_QUADROTORS		2	   			// max number of quadrotor
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
@@ -56,11 +54,6 @@ struct	trajectory_state {
 		float			yf;				// in m
 };
 
-struct	guidance_switch{
-		int				active;			// guidance system state
-		pthread_mutex_t	active_mutex;	// mutex for active
-};
-
 struct	force {
 		float			force_left;		// left force in N
 		float			force_right;	// right force in N
@@ -73,8 +66,8 @@ extern struct state states[MAX_QUADROTORS];
 extern struct state	desired_trajectories[MAX_QUADROTORS];
 extern struct kalman_state kalman_states[MAX_QUADROTORS];
 extern struct trajectory_state traj_states[MAX_QUADROTORS];
-extern struct guidance_switch guid_switches[MAX_QUADROTORS];
 extern struct force forces[MAX_QUADROTORS];
+extern int guid_switches[MAX_QUADROTORS];
 
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
