@@ -32,7 +32,7 @@
 //------------------------------------------------------------------------------
 //	GUIDANCE SYSTEMS CONSTANTS
 //------------------------------------------------------------------------------
-#define	GUID_WAIT_TIME	0.0					// wait time for new target election
+#define	GUID_WAIT_TIME	2.0					// wait time for new target election
 
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS

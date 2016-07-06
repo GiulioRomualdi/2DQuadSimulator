@@ -130,6 +130,10 @@
 #define SELECTED_COL_G	0						// green channel for selected quad
 #define SELECTED_COL_B	0						// blue channel for selected quad
 //------------------------------------------------------------------------------
+#define TARGET_COL_R	33						// red channel for target
+#define TARGET_COL_G	150						// green channel for target
+#define TARGET_COL_B	243						// blue channel for target
+//------------------------------------------------------------------------------
 // PLOT COLOR CONSTANTS
 //------------------------------------------------------------------------------
 #define PLOT_COL1_R		17						// red channel for plot signal # 1
@@ -459,6 +463,25 @@ void 	copy_forces_from_struct(struct force *src, struct force *dst, pthread_mute
 }
 
 //------------------------------------------------------------------------------
+//	Function draw_traj_target
+//	draws a circle near the final target of the selected quadrotor
+//------------------------------------------------------------------------------
+static
+void 	draw_traj_target(BITMAP* bitmap, int selected_quadrotor)
+{
+int		color;
+struct	trajectory_state traj;
+		
+		color = makecol(TARGET_COL_R, TARGET_COL_G, TARGET_COL_B);
+
+		copy_traj_param(&traj_states[selected_quad], &traj, &guidance_mutex[selected_quad]);	
+
+		circlefill(bitmap, FLY_SCALING * traj.xf, \
+				    FLY_H - (FLY_SCALING * traj.yf), \
+					FLY_SCALING * QUAD_HEIGHT, color);
+}
+
+//------------------------------------------------------------------------------
 //	Function draw_quads
 //	draws all quadrotors
 //------------------------------------------------------------------------------
@@ -475,6 +498,8 @@ struct force quad_force;
 		clear_to_color(fly_bitmap, sky_color);
 
 		selected_quad = get_selected_quad();
+
+        draw_traj_target(fly_bitmap, selected_quad);
 
 		for(i = 0; i < MAX_QUADROTORS; i++) {
 			// Get quadrotor state
