@@ -29,23 +29,23 @@ int	  	error;
 
 		// threads
 		error = create_task("Guidance", guidance_tp, guidance_tid,\
-							guidance_attr, guidance_task, GUIDANCE_PERIOD,\
+							guidance_task, GUIDANCE_PERIOD,\
 							GUIDANCE_DEADLINE, MAX_QUADROTORS);
 		if(error != 0)
 			return error;
 
 		error = create_task("Controller", regulator_tp, regulator_tid,\
-							regulator_attr,	regulator_task, REGULATOR_PERIOD,\
+							regulator_task, REGULATOR_PERIOD,\
 							REGULATOR_DEADLINE, MAX_QUADROTORS);
 		if(error != 0)
 			return error;
 
-		error = create_task("Gui", gui_tp, gui_tid, gui_attr,\
+		error = create_task("Gui", gui_tp, gui_tid,\
 							gui_task, GUI_PERIOD, GUI_DEADLINE, 1);
 		if(error != 0)
 			return error;
 
-		error = create_task("User", user_tp, user_tid, user_attr,\
+		error = create_task("User", user_tp, user_tid,\
 							user_task, GUI_PERIOD, 0, 1);
 		if(error != 0)
 			return error;
@@ -60,6 +60,8 @@ int		main()
 
 		if (wait_for_tasks_end() != 0)
 			return EXIT_FAILURE;
+
+		mutex_destroy();
 
 		allegro_exit();
 

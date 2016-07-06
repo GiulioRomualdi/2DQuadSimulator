@@ -979,7 +979,7 @@ void	exec_user_command()
 			switch_guidance(get_selected_quad());
 		}
 		else if(key[KEY_Q])
-			exit(EXIT_SUCCESS);
+			cancel_thread_all();
 }
 
 //------------------------------------------------------------------------------

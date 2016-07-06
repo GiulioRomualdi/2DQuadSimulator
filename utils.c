@@ -22,16 +22,12 @@
 //------------------------------------------------------------------------------
 task_par 		regulator_tp[MAX_QUADROTORS];
 pthread_t 		regulator_tid[MAX_QUADROTORS];
-pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
 task_par 		guidance_tp[MAX_QUADROTORS];
 pthread_t		guidance_tid[MAX_QUADROTORS];
-pthread_attr_t	guidance_attr[MAX_QUADROTORS];
 task_par		gui_tp[1];
 pthread_t		gui_tid[1];
-pthread_attr_t	gui_attr[1];
 task_par		user_tp[1];
 pthread_t		user_tid[1];
-pthread_attr_t	user_attr[1];
 
 // Mutex required for mutual exclusion
 pthread_mutex_t guidance_mutex[MAX_QUADROTORS];
@@ -466,7 +462,6 @@ int		time_cmp(struct timespec* t1, struct timespec* t2)
 void	mutex_init()
 {
 int		i;
-
 		 for(i = 0; i < MAX_QUADROTORS; i++) {
 			pthread_mutex_init(&guidance_mutex[i], NULL);
 			pthread_mutex_init(&dynamics_mutex[i], NULL);
@@ -474,8 +469,36 @@ int		i;
 			pthread_mutex_init(&force_mutex[i], NULL);
 			pthread_mutex_init(&desired_traj_mutex[i], NULL);
 			pthread_mutex_init(&guid_switches_mutex[i], NULL);
+			pthread_mutex_init(&(regulator_tp[i].mutex), NULL);
+			pthread_mutex_init(&(guidance_tp[i].mutex), NULL);
 		 }
             pthread_mutex_init(&selected_quad_mutex, NULL);
+			pthread_mutex_init(&(gui_tp[0].mutex), NULL);
+			pthread_mutex_init(&(user_tp[0].mutex), NULL);
+}
+
+//-----------------------------------------------------------------------------
+//	Function mutex_destroy
+//	destroy all the mutex required in the application
+//-----------------------------------------------------------------------------
+void	mutex_destroy()
+{
+int		i;
+
+		 for(i = 0; i < MAX_QUADROTORS; i++) {
+			pthread_mutex_destroy(&guidance_mutex[i]);
+			pthread_mutex_destroy(&dynamics_mutex[i]);
+			pthread_mutex_destroy(&kalman_mutex[i]);
+			pthread_mutex_destroy(&force_mutex[i]);
+			pthread_mutex_destroy(&desired_traj_mutex[i]);
+			pthread_mutex_destroy(&guid_switches_mutex[i]);
+			pthread_mutex_destroy(&(regulator_tp[i].mutex));
+			pthread_mutex_destroy(&(guidance_tp[i].mutex));
+
+		 }
+            pthread_mutex_destroy(&selected_quad_mutex);
+			pthread_mutex_destroy(&(gui_tp[0].mutex));
+			pthread_mutex_destroy(&(user_tp[0].mutex));
 }
 
 //-----------------------------------------------------------------------------
@@ -627,13 +650,12 @@ void	thread_loop_end(struct task_par* tp)
 
 //------------------------------------------------------------------------------
 //	Function create_task
-// 	creates a task given the task name, parameters, id, attribute, body,
+// 	creates a task given the task name, parameters, id, body,
 //	period, relative deadline and the no. of replica required;
 //	return 0 if success, one of the ERRNO otherwise
 //------------------------------------------------------------------------------
 int		create_task(char* task_name, task_par tp[], pthread_t tid[],\
-					pthread_attr_t attr[], void*(*task_body)(void*),\
-					int period, int deadline, int replica)
+					void*(*task_body)(void*), int period, int deadline, int replica)
 {
 int		i;
 int 	error;
@@ -644,16 +666,9 @@ int 	error;
 			tp[i].deadline = deadline;
 			tp[i].dmiss = 0;
 			strcpy(tp[i].task_name, task_name);
-			pthread_mutex_init(&tp[i].mutex, NULL);
 			zero_wcet(&(tp[i]));
 
-			error = pthread_attr_init(&attr[i]);
-			if (error != 0) {
-				perror("(attr_init) Error:");
-				return error;
-			}
-
-			error = pthread_create(&tid[i], &attr[i], task_body, &tp[i]);
+			error = pthread_create(&tid[i], NULL, task_body, &tp[i]);
 			if (error != 0) {
 				perror("(pthread_create) Error:");
 				return error;
@@ -692,4 +707,21 @@ int 	i, error;
 		}
 
 		return 0;
+}
+
+//------------------------------------------------------------------------------
+//	Function cancel_thread_all
+//------------------------------------------------------------------------------
+void	cancel_thread_all()
+{
+int		i, retval;
+		
+		pthread_cancel(gui_tid[0]);
+
+		for(i = 0; i < MAX_QUADROTORS; i++) {
+			pthread_cancel(guidance_tid[i]);
+			pthread_cancel(regulator_tid[i]);
+		}
+		
+		pthread_exit((void*)&retval);
 }

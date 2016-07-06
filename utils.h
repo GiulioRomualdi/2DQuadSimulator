@@ -107,11 +107,12 @@ void	init_timespecs(task_par* tp);
 void	set_start_time(task_par* tp);
 void	zero_wcet(task_par* tp);
 void	mutex_init();
+void	mutex_destroy();
 void	aperiodic_wait(struct task_par* tp);
 void	thread_loop_end(struct task_par* tp);
 int		create_task(char* task_name, task_par tp[], pthread_t tid[],\
-					pthread_attr_t attr[], void*(*task_body)(void*),\
-					int period, int deadline, int replica);
+					void*(*task_body)(void*), int period, int deadline, int replica);
 int		wait_for_tasks_end();
+void	cancel_thread_all();
 
 #endif
