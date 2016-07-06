@@ -102,7 +102,6 @@ void	switch_guidance(int index)
 //------------------------------------------------------------------------------
 //	Function copy_traj_param
 //------------------------------------------------------------------------------
-static
 void	copy_traj_param(struct trajectory_state *src,\
 						struct trajectory_state *dst,\
 						pthread_mutex_t *mutex)
@@ -131,7 +130,6 @@ void	update_trajectory_time(int i, float time_step)
 //------------------------------------------------------------------------------
 //	Function copy_state
 //------------------------------------------------------------------------------
-static
 void 	copy_state(state *src, state *dst, pthread_mutex_t *mutex)
 {
 		pthread_mutex_lock(mutex);

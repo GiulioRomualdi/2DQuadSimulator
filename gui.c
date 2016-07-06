@@ -14,6 +14,8 @@
 //------------------------------------------------------------------------------
 #define MARGIN			30.0					// margin width in pixel
 #define	LINE_OFFSET		30.0					// layout line offset in pixel
+#define	TITLE_X			10						// title label upper-left corner (x)
+#define	TITLE_Y			5						// title label upper-left corner (y)
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------
@@ -34,41 +36,56 @@
 #define PLOT_H		   	170.0					// plot area heigth in pixel
 #define	PLOT_W_SCALE	(PLOT_W / BUFF_SIZE)	// scale factor along the width
 //-----------------------------------------------------------------------------
-#define	PLOT_X_X		FLY_X + FLY_W + 2 * MARGIN + PLOT_TICK_WIDTH +  PLOT_MARGIN
-#define	PLOT_X_Y		PLOT_TOP_MARGIN + PLOT_MARGIN
+#define	PLOT_X_X		FLY_X + FLY_W + \
+						2 * MARGIN + \
+						PLOT_TICK_WIDTH + \
+						PLOT_MARGIN				// x plot area upper-left corner (x)
+#define	PLOT_X_Y		PLOT_TOP_MARGIN + \
+						PLOT_MARGIN				// x plot area upper-left corner (y)
 #define	PLOT_X_MAX		0.5						// max value of data
 #define	PLOT_X_TICK		0.2						// axis tick in meters
-#define	PLOT_X_SCALE	((PLOT_H / 2) / (PLOT_X_MAX))
+#define	PLOT_X_SCALE	((PLOT_H / 2) / \
+						 (PLOT_X_MAX))			// scale factor
 //------------------------------------------------------------------------------
-#define	PLOT_Y_X		PLOT_X_X
-#define	PLOT_Y_Y		PLOT_X_Y + PLOT_H + 3 * PLOT_MARGIN + PLOT_SPACING
+#define	PLOT_Y_X		PLOT_X_X				// y plot area upper-left corner (x)
+#define	PLOT_Y_Y		PLOT_X_Y + PLOT_H + \
+						3 * PLOT_MARGIN + \
+						PLOT_SPACING			// y plot area upper-left corner (y)
 #define	PLOT_Y_MAX		0.5						// max value of data
 #define	PLOT_Y_TICK		0.2						// axis tick in meters
-#define	PLOT_Y_SCALE	((PLOT_H / 2) / (PLOT_Y_MAX))
+#define	PLOT_Y_SCALE	((PLOT_H / 2) / \
+						 (PLOT_Y_MAX))			// scale factor
 //------------------------------------------------------------------------------
-#define	PLOT_TH_X		PLOT_X_X
-#define	PLOT_TH_Y		PLOT_Y_Y + PLOT_H + 3 * PLOT_MARGIN + PLOT_SPACING
+#define	PLOT_TH_X		PLOT_X_X				// theta plot area upper-left corner (x)
+#define	PLOT_TH_Y		PLOT_Y_Y + PLOT_H + \
+						3 * PLOT_MARGIN + \
+						PLOT_SPACING			// theta plot area upper-left corner (y)
 #define	PLOT_TH_MAX		0.1						// max value of data
 #define	PLOT_TH_TICK	0.04					// axis tick in degrees
-#define	PLOT_TH_SCALE	((PLOT_H / 2) / (PLOT_TH_MAX))
+#define	PLOT_TH_SCALE	((PLOT_H / 2) / \
+						 (PLOT_TH_MAX))			// scale factor
 //------------------------------------------------------------------------------
 #define	PLOT_TIME_TICK	2						// time axis tick in seconds
-#define PLOT_TIME_SCALE	((PLOT_W) / (MAX_PLOT_TIME))
+#define PLOT_TIME_SCALE	((PLOT_W) / \
+						 (MAX_PLOT_TIME))		// time scale factor
 //------------------------------------------------------------------------------
-//	PERFORMANCE LOG AREA
+//	PERFORMANCE AREA
 //------------------------------------------------------------------------------
-#define LOG_W			960.0					// log area width in pixel
-#define LOG_H			100.0					// log area heigth in pixel
-#define	LOG_X			30.0					// log area upper-left corner (x)
-#define	LOG_Y			FLY_Y + FLY_H + 2 * MARGIN + 5	// log area upper-left corner (y)
-#define	LOG_SPACING		160						// spacing between log widgets
+#define PERF_W			960.0					// performance area width in pixel
+#define PERF_H			100.0					// performance area heigth in pixel
+#define	PERF_X			30.0					// performance area upper-left corner (x)
+#define	PERF_Y			FLY_Y + FLY_H + \
+						2 * MARGIN + 5			// performance area upper-left corner (y)
+#define	PERF_SPACING	160						// spacing between performance widgets
 //------------------------------------------------------------------------------
-//	GUIDANCE LOG AREA
+//	GUIDANCE AREA
 //------------------------------------------------------------------------------
 #define GUIDANCE_W		270.0					// guidance area width in pixel
 #define GUIDANCE_H		100.0					// guidance area heigth in pixel
-#define	GUIDANCE_X		FLY_X + FLY_W + 2 * MARGIN
-#define	GUIDANCE_Y		FLY_Y + FLY_H + 2 * MARGIN + 5
+#define	GUIDANCE_X		FLY_X + FLY_W + \
+						2 * MARGIN				// guidance area upper-left corner (x)
+#define	GUIDANCE_Y		FLY_Y + FLY_H + \
+						2 * MARGIN + 5			// guidance area upper-left corner (y)
 //------------------------------------------------------------------------------
 //	QUADROTOR GRAPHIC CONSTANTS
 //------------------------------------------------------------------------------
@@ -135,19 +152,18 @@
 #define PLOT_TICK_G		90						// green channel for plot text
 #define PLOT_TICK_B		90						// blue channel for plot text
 
-
 //------------------------------------------------------------------------------
 //	GLOBAL VARIABLE DEFINITIONS
 //------------------------------------------------------------------------------
 BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap,\
-		    *log_bitmap, *guidance_bitmap;
+		    *perf_bitmap, *guidance_bitmap;
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est,\
 		    plot_theta_track;
 FONT		*font_16, *font_12, *font_11, *font_10;
 int			selected_quad;
 
 //------------------------------------------------------------------------------
-//	FUNCTIONS that modifies the variable 'selected_quadrotor'
+//	FUNCTIONS that modifies the variable 'selected_quad'
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -234,7 +250,7 @@ void	bitmap_init()
 		plot_x_bitmap = create_bitmap(PLOT_W, PLOT_H);
 		plot_y_bitmap = create_bitmap(PLOT_W, PLOT_H);
 		plot_theta_bitmap = create_bitmap(PLOT_W, PLOT_H);
-		log_bitmap = create_bitmap(LOG_W, LOG_H);
+		perf_bitmap = create_bitmap(PERF_W, PERF_H);
 		guidance_bitmap = create_bitmap(GUIDANCE_W, GUIDANCE_H);
 }
 
@@ -260,12 +276,12 @@ void	plot_init(plot_data* plot)
 static
 void	plot_init_all()
 {
-			plot_init(&plot_x_est);
-			plot_init(&plot_y_est);
-			plot_init(&plot_theta_est);
-			plot_init(&plot_x_track);
-			plot_init(&plot_y_track);
-			plot_init(&plot_theta_track);
+		plot_init(&plot_x_est);
+		plot_init(&plot_y_est);
+		plot_init(&plot_theta_est);
+		plot_init(&plot_x_track);
+		plot_init(&plot_y_track);
+		plot_init(&plot_theta_track);
 }
 
 //------------------------------------------------------------------------------
@@ -313,6 +329,7 @@ int 	i;
 		// Shift the buffer to the left
 		for(i = plot->index; i < BUFF_SIZE - 1; i++)
 			plot->buffer[i] = plot->buffer[i + 1];
+
 		// Add the new sample to the buffer
 		plot->buffer[BUFF_SIZE - 1] = sample;
 
@@ -320,8 +337,74 @@ int 	i;
 }
 
 //------------------------------------------------------------------------------
+//	Function plot_update
+//  updates the plot buffer of the estimation error and traking error
+//	for x, y and theta
+//------------------------------------------------------------------------------
+static
+void	plot_update()
+{
+int		i;
+state  	state_, estimate, traj;
+
+		i = get_selected_quad();
+
+		copy_state(&states[i], &state_, &dynamics_mutex[i]);
+		copy_state(&(kalman_states[i].estimate), &estimate, &kalman_mutex[i]);
+		copy_state(&desired_trajectories[i], &traj, &desired_traj_mutex[i]);
+	 	 
+		plot_add_sample(&plot_x_est, state_.x - estimate.x);
+		plot_add_sample(&plot_x_track, state_.x - traj.x);
+
+		plot_add_sample(&plot_y_est, state_.y - estimate.y);
+		plot_add_sample(&plot_y_track, state_.y - traj.y);
+
+		plot_add_sample(&plot_theta_est, state_.theta - estimate.theta);
+		plot_add_sample(&plot_theta_track, state_.theta - traj.theta);
+}
+
+//------------------------------------------------------------------------------
 //	DRAWING FUNCTION
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//  Function get_quad_coords
+//	returns the world frame coordinates for points of interest
+//------------------------------------------------------------------------------
+static
+struct	quad_coordinates	get_quad_coords(float x, float y, float theta,\
+										float fl, float fr)
+{
+struct	quad_coordinates world_coords;
+float	rot[3][3], transl[3][3], scale_[3][3], transformation[3][3];
+float 	coords[3][6] = {{-L,  L,  0,           0, -L,                L},
+						{ 0,  0, -QUAD_HEIGHT, 0,  fl * FORCE_SCALE, fr * FORCE_SCALE},
+						{ 1,  1,  1,           1,  1,                1}};
+
+		// Transform body fixed coordinates into world coordinates
+		// New coordinates are stored in 'coords'
+		rotate(rot, theta);
+		translate(transl, x, y);
+		scale(scale_, FLY_SCALING);
+		mat_mul(3, 3, scale_, 3, 3, transl, transformation);
+		mat_mul(3, 3, transformation, 3, 3, rot, transformation);
+		mat_mul(3, 3, transformation, 3, 6, coords, coords);
+
+		world_coords.x_left = coords[0][0];
+		world_coords.x_right = coords[0][1];
+		world_coords.x_down = coords[0][2];
+		world_coords.x_centre = coords[0][3];
+		world_coords.x_fl = coords[0][4];
+		world_coords.x_fr = coords[0][5];
+		world_coords.y_left = FLY_H - coords[1][0];
+		world_coords.y_right = FLY_H - coords[1][1];
+		world_coords.y_down = FLY_H - coords[1][2];
+		world_coords.y_centre = FLY_H - coords[1][3];
+		world_coords.y_fl = FLY_H - coords[1][4];
+		world_coords.y_fr = FLY_H - coords[1][5];
+
+		return world_coords;
+}
 
 //------------------------------------------------------------------------------
 //	Function draw_quadrotor
@@ -333,34 +416,10 @@ void	draw_quadrotor(BITMAP* bitmap, float x, float y, float theta,\
 					   float fl, float fr, int selected)
 {
 int		fill_color, frame_color, force_color, selected_color;
-float	x_left, x_right, x_down, x_centre, x_fl, x_fr;
-float	y_left, y_right, y_down, y_centre, y_fl, y_fr;
-float	rot[3][3], transl[3][3], scale_[3][3], transformation[3][3];
-float 	coords[3][6] = {{-L,  L,  0,           0, -L,                L},
-						{ 0,  0, -QUAD_HEIGHT, 0,  fl * FORCE_SCALE, fr * FORCE_SCALE},
-						{ 1,  1,  1,           1,  1,                1}};
+struct	quad_coordinates c;
 
-		// Transform body fixed coordinates into world coordinates
-		// New coordinates are stored in 'coordinates'
-		rotate(rot, theta);
-		translate(transl, x, y);
-		scale(scale_, FLY_SCALING);
-		mat_mul(3, 3, scale_, 3, 3, transl, transformation);
-		mat_mul(3, 3, transformation, 3, 3, rot, transformation);
-		mat_mul(3, 3, transformation, 3, 6, coords, coords);
-
-		x_left = coords[0][0];
-		x_right = coords[0][1];
-		x_down = coords[0][2];
-		x_centre = coords[0][3];
-		x_fl = coords[0][4];
-		x_fr = coords[0][5];
-		y_left = FLY_H - coords[1][0];
-		y_right = FLY_H - coords[1][1];
-		y_down = FLY_H - coords[1][2];
-		y_centre = FLY_H - coords[1][3];
-		y_fl = FLY_H - coords[1][4];
-		y_fr = FLY_H - coords[1][5];
+		// Get world frame coordinates
+		c = get_quad_coords(x, y, theta, fl, fr);
 
 		// Set colors
 		fill_color = makecol(FILL_COL_R, FILL_COL_G, FILL_COL_B);
@@ -371,21 +430,32 @@ float 	coords[3][6] = {{-L,  L,  0,           0, -L,                L},
 		// Draw the quadcopter
 
 		// Triangle fill
-		triangle(bitmap, x_left, y_left, x_right, y_right, x_down, y_down, fill_color);
+		triangle(bitmap, c.x_left, c.y_left, c.x_right, c.y_right, c.x_down, c.y_down, fill_color);
 
 		// Triangle edges
-		line(bitmap, x_left, y_left, x_right, y_right, frame_color);
-		line(bitmap, x_down, y_down, x_right, y_right, frame_color);
-		line(bitmap, x_left, y_left, x_down, y_down, frame_color);
+		line(bitmap, c.x_left, c.y_left, c.x_right, c.y_right, frame_color);
+		line(bitmap, c.x_down, c.y_down, c.x_right, c.y_right, frame_color);
+		line(bitmap, c.x_left, c.y_left, c.x_down, c.y_down, frame_color);
 
 		// Circle
 		if (selected)
-			circlefill(bitmap, x_centre, y_centre, FLY_SCALING * QUAD_HEIGHT, selected_color);
-		circle(bitmap, x_centre, y_centre, FLY_SCALING * QUAD_HEIGHT, frame_color);
+			circlefill(bitmap, c.x_centre, c.y_centre, FLY_SCALING * QUAD_HEIGHT, selected_color);
+		circle(bitmap, c.x_centre, c.y_centre, FLY_SCALING * QUAD_HEIGHT, frame_color);
 
 		// Force arrows
-		line(bitmap, x_left, y_left, x_fl, y_fl, force_color);
-		line(bitmap, x_right, y_right, x_fr, y_fr, force_color);
+		line(bitmap, c.x_left, c.y_left, c.x_fl, c.y_fl, force_color);
+		line(bitmap, c.x_right, c.y_right, c.x_fr, c.y_fr, force_color);
+}
+
+//------------------------------------------------------------------------------
+//	Function copy_forces_from_struct
+//------------------------------------------------------------------------------
+static
+void 	copy_forces_from_struct(struct force *src, struct force *dst, pthread_mutex_t *mutex)
+{
+		pthread_mutex_lock(mutex);
+		*dst = *src;
+		pthread_mutex_unlock(mutex);
 }
 
 //------------------------------------------------------------------------------
@@ -395,8 +465,9 @@ float 	coords[3][6] = {{-L,  L,  0,           0, -L,                L},
 static
 void	draw_quads()
 {
-float	x, y, theta, force_left, force_right;
 int		i, sky_color, legend_color, selected_quad;
+state	quad_state;
+struct force quad_force;
 
 		sky_color = makecol(SKY_COL_R, SKY_COL_G, SKY_COL_B);
  		legend_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
@@ -405,32 +476,24 @@ int		i, sky_color, legend_color, selected_quad;
 
 		selected_quad = get_selected_quad();
 
+		for(i = 0; i < MAX_QUADROTORS; i++) {
+			// Get quadrotor state
+			copy_state(&states[i], &quad_state, &dynamics_mutex[i]);
+
+			// Get quadrotor forces
+			copy_forces_from_struct(&forces[i], &quad_force, &force_mutex[i]);
+
+			// Draw the quadrotor
+			draw_quadrotor(fly_bitmap, quad_state.x, quad_state.y, quad_state.theta,\
+						   quad_force.force_left, quad_force.force_right, selected_quad == i);
+		}
+
 		// Print the number of the selected quadrotor
-		textout_right_ex(fly_bitmap, font_10,"quad # ", FLY_W, FLY_H - MARGIN,
+		textout_right_ex(fly_bitmap, font_10,"quad #   ", FLY_W, FLY_H - MARGIN,
 							legend_color, -1);
 		textprintf_right_ex(fly_bitmap, font_10, FLY_W, FLY_H - MARGIN,
 							legend_color, -1,
 							"%d", selected_quad + 1);
-
-
-		for(i = 0; i < MAX_QUADROTORS; i++) {
-			// Get quadrotor state
-			pthread_mutex_lock(&dynamics_mutex[i]);
-			x = states[i].x;
-			y = states[i].y;
-			theta = states[i].theta;
-			pthread_mutex_unlock(&dynamics_mutex[i]);
-
-			// Get quadrotor forces
-			pthread_mutex_lock(&force_mutex[i]);
-			force_left = forces[i].force_left;
-			force_right = forces[i].force_right;
-			pthread_mutex_unlock(&force_mutex[i]);
-
-			// Draw the quadrotor
-			draw_quadrotor(fly_bitmap, x, y, theta, force_left, force_right,\
-						   get_selected_quad() == i);
-		}
 
 		// Transfer image from bitmap to screen
 		blit(fly_bitmap, screen, 0, 0, FLY_X, FLY_Y, FLY_W, FLY_H);
@@ -590,45 +653,11 @@ void	draw_figure(BITMAP* bitmap, plot_data* signal_1, plot_data* signal_2,\
 //------------------------------------------------------------------------------
 //	Function draw_plot_area
 //  draws the plot area containing three figures (estimation and tracking error
-//	of x, y and theta for the i-th quadcopter)
+//	of x, y and theta)
 //------------------------------------------------------------------------------
 static
 void	draw_plot_area()
 {
-float	x, x_est, x_traj;
-float	y, y_est, y_traj;
-float	theta, theta_est, theta_traj;
-int		i;
-
-		i = get_selected_quad();
-
-	 	pthread_mutex_lock(&dynamics_mutex[i]);
-		x = states[i].x;
-		y = states[i].y;
-		theta = states[i].theta;
-		pthread_mutex_unlock(&dynamics_mutex[i]);
-
-	 	pthread_mutex_lock(&kalman_mutex[i]);
-		x_est = kalman_states[i].estimate.x;
-		y_est = kalman_states[i].estimate.y;
-		theta_est = kalman_states[i].estimate.theta;
-		pthread_mutex_unlock(&kalman_mutex[i]);
-
-		pthread_mutex_lock(&desired_traj_mutex[i]);
-		x_traj = desired_trajectories[i].x;
-		y_traj = desired_trajectories[i].y;
-		theta_traj = desired_trajectories[i].theta;
-		pthread_mutex_unlock(&desired_traj_mutex[i]);
-
-		plot_add_sample(&plot_x_est, x - x_est);
-		plot_add_sample(&plot_x_track, x - x_traj);
-
-		plot_add_sample(&plot_y_est, y - y_est);
-		plot_add_sample(&plot_y_track, y - y_traj);
-
-		plot_add_sample(&plot_theta_est, theta - theta_est);
-		plot_add_sample(&plot_theta_track, theta - theta_traj);
-
 		draw_figure(plot_x_bitmap, &plot_x_est, &plot_x_track, PLOT_X_MAX,\
 					PLOT_X_X, PLOT_X_Y, PLOT_X_SCALE, PLOT_X_TICK, \
 					"x (m)");
@@ -655,7 +684,7 @@ int		title_color;
 
 		title_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
 		textout_ex(screen, font_16, "2D Quad Simulator",\
-				   10, 5, title_color, -1);
+				   TITLE_X, TITLE_Y, title_color, -1);
 		textout_centre_ex(screen, font_12, "errors",\
 						  PLOT_X_X + PLOT_W / 2, PLOT_X_Y - 25, title_color, -1);
 		textout_centre_ex(screen, font_12, "view",\
@@ -715,7 +744,7 @@ float	width, height, h_upper, h_lower, text_h_offset;
 		width = PLOT_X_X - 5;
 		h_lower = height_base - PLOT_H / 2;
 		h_upper = height_base + PLOT_H / 2;
-		text_h_offset = -14;
+		text_h_offset = - 14;
 
 		// Draw ticks
 		for (i = 0; (height = height_base - i * scale * tick) >= h_lower; i++)
@@ -788,13 +817,13 @@ int		i;
 
 		i = get_selected_quad();
 
-		clear_to_color(log_bitmap, 0);
+		clear_to_color(perf_bitmap, 0);
 
-		print_performace_label(log_bitmap, 0, 0, &(gui_tp[0]));
-		print_performace_label(log_bitmap, LOG_SPACING, 0,  &(regulator_tp[i]));
-		print_performace_label(log_bitmap, 2 * LOG_SPACING, 0, &(guidance_tp[i]));
+		print_performace_label(perf_bitmap, 0, 0, &(gui_tp[0]));
+		print_performace_label(perf_bitmap, PERF_SPACING, 0,  &(regulator_tp[i]));
+		print_performace_label(perf_bitmap, 2 * PERF_SPACING, 0, &(guidance_tp[i]));
 
-		blit(log_bitmap, screen, 0, 0, LOG_X, LOG_Y, LOG_W, LOG_H);
+		blit(perf_bitmap, screen, 0, 0, PERF_X, PERF_Y, PERF_W, PERF_H);
 }
 
 //------------------------------------------------------------------------------
@@ -805,7 +834,8 @@ static
 void	print_guidance_info()
 {
 int		i, text_color, height;
-float	x, y, xf, yf, tof;
+state	state_;
+struct	trajectory_state traj;
 
 		i = get_selected_quad();
 
@@ -817,35 +847,28 @@ float	x, y, xf, yf, tof;
 		// Evaluate text_width and text_height
 		height = text_height(font_11);
 
-		pthread_mutex_lock(&dynamics_mutex[i]);
-		x = states[i].x;
-		y = states[i].y;
-		pthread_mutex_unlock(&dynamics_mutex[i]);
-
-		pthread_mutex_lock(&guidance_mutex[i]);
-		xf = traj_states[i].xf;
-		yf = traj_states[i].yf;
-		tof = traj_states[i].final_time;
-		pthread_mutex_unlock(&guidance_mutex[i]);
+		copy_state(&states[i], &state_, &dynamics_mutex[i]);
+		copy_traj_param(&traj_states[i], &traj, &guidance_mutex[i]);
 
 		if (get_guidance_state(i))
 			textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active: Yes");
 		else
 			textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active: No");
+		
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\
-					  "Next target: [%.2f", xf);
+					  "Next target: [%.2f", traj.xf);
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\
-					  "%21s%.2f", ", ", yf);
+					  "%21s%.2f", ", ", traj.yf);
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\
 					  "%28s", "] m");
 	 	textprintf_ex(guidance_bitmap, font_10, 0, 2 * height, text_color, -1,\
-  					  "State : [%.2f", x);
+  					  "State : [%.2f", state_.x);
 	 	textprintf_ex(guidance_bitmap, font_10, 0, 2 * height, text_color, -1,\
-  					  "%15s%.2f", ", ", y);
+  					  "%15s%.2f", ", ", state_.y);
 		textprintf_ex(guidance_bitmap, font_10, 0, 2 * height, text_color, -1,\
 					  "%22s", "] m");
 		textprintf_ex(guidance_bitmap, font_10, 0, 3 * height, text_color, -1,\
-  					  "Time of flight: %.2f", tof);
+  					  "Time of flight: %.2f", traj.final_time);
 		textprintf_ex(guidance_bitmap, font_10, 0, 3 * height, text_color, -1,\
 					  "%22s", "s");
 
@@ -898,6 +921,7 @@ task_par*	tp;
 				set_start_time(tp);
 
 				draw_quads();
+				plot_update();
 				draw_plot_area();
 				print_performace_info();
 				print_guidance_info();

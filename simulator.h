@@ -1,6 +1,8 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
+#include <pthread.h>
+
 //------------------------------------------------------------------------------
 //	2D QUADCOPTER CONSTANTS
 //------------------------------------------------------------------------------
@@ -72,6 +74,18 @@ extern int guid_switches[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable with type 'state'
+//------------------------------------------------------------------------------
+void 	copy_state(state *src, state *dst, pthread_mutex_t *mutex);
+
+//------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable with type 'trajectory_state'
+//------------------------------------------------------------------------------
+void	copy_traj_param(struct trajectory_state *src,\
+						struct trajectory_state *dst,\
+						pthread_mutex_t *mutex);
 
 //------------------------------------------------------------------------------
 //	FUNCTIONS that modifies the variable 'guid_switch'
