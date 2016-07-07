@@ -10,7 +10,7 @@
 #define	M					1.0				// quadcopter mass in Kg
 #define IZ					(M * L * L /12)	// moment of inertia around axis x
 #define G					9.81			// gravitational acceleration in m/s^2
-#define MAX_QUADROTORS		2	   			// max number of quadrotor
+#define MAX_QUADROTORS		5	   			// max number of quadrotor
 //------------------------------------------------------------------------------
 //	FLYING AREA CONSTANTS
 //------------------------------------------------------------------------------

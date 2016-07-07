@@ -356,7 +356,7 @@ state  	state_, estimate, traj;
 		copy_state(&states[i], &state_, &dynamics_mutex[i]);
 		copy_state(&(kalman_states[i].estimate), &estimate, &kalman_mutex[i]);
 		copy_state(&desired_trajectories[i], &traj, &desired_traj_mutex[i]);
-	 	 
+
 		plot_add_sample(&plot_x_est, state_.x - estimate.x);
 		plot_add_sample(&plot_x_track, state_.x - traj.x);
 
@@ -471,10 +471,10 @@ void 	draw_traj_target(BITMAP* bitmap, int selected_quadrotor)
 {
 int		color;
 struct	trajectory_state traj;
-		
+
 		color = makecol(TARGET_COL_R, TARGET_COL_G, TARGET_COL_B);
 
-		copy_traj_param(&traj_states[selected_quad], &traj, &guidance_mutex[selected_quad]);	
+		copy_traj_param(&traj_states[selected_quad], &traj, &guidance_mutex[selected_quad]);
 
 		circlefill(bitmap, FLY_SCALING * traj.xf, \
 				    FLY_H - (FLY_SCALING * traj.yf), \
@@ -879,7 +879,7 @@ struct	trajectory_state traj;
 			textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active: Yes");
 		else
 			textprintf_ex(guidance_bitmap, font_10, 0, 0, text_color, -1, "Active: No");
-		
+
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\
 					  "Next target: [%.2f", traj.xf);
 		textprintf_ex(guidance_bitmap, font_10, 0, height, text_color, -1,\

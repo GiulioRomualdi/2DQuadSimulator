@@ -715,13 +715,13 @@ int 	i, error;
 void	cancel_thread_all()
 {
 int		i, retval;
-		
+
 		pthread_cancel(gui_tid[0]);
 
 		for(i = 0; i < MAX_QUADROTORS; i++) {
 			pthread_cancel(guidance_tid[i]);
 			pthread_cancel(regulator_tid[i]);
 		}
-		
+
 		pthread_exit((void*)&retval);
 }

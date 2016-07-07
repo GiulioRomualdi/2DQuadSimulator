@@ -24,8 +24,8 @@
 #define VY0_STD			1.0 / 3.0			// std of vy0
 #define THETA0_STD		0.6 / 3.0			// std of theta0
 #define VTHETA0_STD		0.0					// std of vtheta0
-#define	WIND_X_STD 		1.0					// std of the force due to wind along x
-#define WIND_Y_STD		1.0					// std of the force due to wind along y
+#define	WIND_X_STD 		1.0 / 3.0			// std of the force due to wind along x
+#define WIND_Y_STD		1.0 / 3.0			// std of the force due to wind along y
 #define NOISE_X_STD		1.0 / 3.0			// std of x measurament noise
 #define NOISE_Y_STD		1.0 / 3.0			// std of y measurament noise
 #define NOISE_THETA_STD	0.6 / 3.0			// std of theta measurament noise
@@ -113,7 +113,7 @@ void	copy_traj_param(struct trajectory_state *src,\
 
 //------------------------------------------------------------------------------
 //	Function update_trajectory_time
-//	update the current time of the trajectory 
+//	update the current time of the trajectory
 //------------------------------------------------------------------------------
 static
 void	update_trajectory_time(int i, float time_step)
