@@ -20,8 +20,12 @@ int	  	error;
 		set_color_depth(32);
 		set_gfx_mode(GFX_AUTODETECT_WINDOWED, WINDOW_W, WINDOW_H, 0, 0);
 		install_keyboard();
+		install_mouse();
+		enable_hardware_cursor();
+		show_mouse(screen);
 
 		init_selected_quad();
+		init_target_selection_mode();
 		init_guidance_switches();
 		init_random_generator();
 		mutex_init();

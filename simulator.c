@@ -88,10 +88,10 @@ int		value;
 //	Function switch_guidance
 //	turns on/off the guidance system of the i-th quadrotor
 //------------------------------------------------------------------------------
-void	switch_guidance(int index)
+void	switch_guidance(int index, int active)
 {
 		pthread_mutex_lock(&guid_switches_mutex[index]);
-		guid_switches[index] = (guid_switches[index] + 1) % 2;
+		guid_switches[index] = active;
 		pthread_mutex_unlock(&guid_switches_mutex[index]);
 }
 
@@ -121,6 +121,41 @@ void	update_trajectory_time(int i, float time_step)
 		pthread_mutex_lock(&guidance_mutex[i]);
 		traj_states[i].current_time += time_step;
 		pthread_mutex_unlock(&guidance_mutex[i]);
+}
+
+//------------------------------------------------------------------------------
+//	Function set_traj_params
+//	set the trajectory parameters for the i-th quadrotor
+//	given the coordinates of the new target
+//------------------------------------------------------------------------------
+void	set_traj_params(int i, float x, float y)
+{
+struct trajectory_state traj_new_p;
+state	current_state;
+float 	tf;
+
+		// Get the current state of the quadrotor
+		copy_state(&(kalman_states[i].estimate), &current_state, &kalman_mutex[i]);
+
+		// Set new trajectory parameters
+		traj_new_p.x0 = current_state.x;
+		traj_new_p.y0 = current_state.y;
+		traj_new_p.xf = x;
+		traj_new_p.yf = y;
+
+		tf = sqrt(pow(traj_new_p.xf - traj_new_p.x0, 2) + pow(traj_new_p.yf - traj_new_p.y0, 2));
+		// Not too short
+		if (tf < 2)
+			tf = 2;
+		// Not too long
+		if (tf > 5)
+			tf = 5;
+
+		traj_new_p.current_time = 0;
+		traj_new_p.final_time = tf;
+
+		// Update guidance parameters
+		copy_traj_param(&traj_new_p, &traj_states[i], &guidance_mutex[i]);
 }
 
 //------------------------------------------------------------------------------
@@ -824,6 +859,10 @@ float	wind_x, wind_y;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+//	REGULATOR TASK
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 //	Function set_initial_conditions
 //	set the initial conditions for the simulation
 //------------------------------------------------------------------------------
@@ -900,6 +939,9 @@ state	reference_trajectory, estimate, state;
 }
 
 
+//------------------------------------------------------------------------------
+//  GUIDANCE TASK
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //	Function guidance_task
@@ -907,9 +949,7 @@ state	reference_trajectory, estimate, state;
 void*	guidance_task(void* arg)
 {
 struct task_par* tp;
-struct trajectory_state traj_p, traj_new_p;
-state	current_state;
-float	tf;
+struct trajectory_state traj_p;
 
 		tp = (struct task_par*)arg;
 
@@ -923,32 +963,9 @@ float	tf;
 
 				copy_traj_param(&traj_states[tp->id], &traj_p, &guidance_mutex[tp->id]);
 
-				if (traj_p.current_time > traj_p.final_time + GUID_WAIT_TIME) {
-
-					// Get the current state of the quadrotor
-					copy_state(&(kalman_states[tp->id].estimate), &current_state, &kalman_mutex[tp->id]);
-
-					// Set new trajectory parameters
-					traj_new_p.x0 = current_state.x;
-					traj_new_p.y0 = current_state.y;
-					traj_new_p.xf = get_uniform_generic(L, WORLD_W - L);
-					traj_new_p.yf = get_uniform_generic(L, WORLD_H - L);
-
-					tf = sqrt(pow(traj_new_p.xf - traj_new_p.x0, 2) + pow(traj_new_p.yf - traj_new_p.y0, 2));
-					// Not too short
-					if (tf < 2)
-						tf = 2;
-					// Not too long
-					if (tf > 5)
-						tf = 5;
-
-					traj_new_p.current_time = 0;
-					traj_new_p.final_time = tf;
-
-					// Update guidance parameters
-					copy_traj_param(&traj_new_p, &traj_states[tp->id], &guidance_mutex[tp->id]);
-				}
-
+				if (traj_p.current_time > traj_p.final_time + GUID_WAIT_TIME)
+					set_traj_params(tp->id, get_uniform_generic(L, WORLD_W - L),\
+									get_uniform_generic(L, WORLD_H - L));
 			}
 
 			thread_loop_end(tp);

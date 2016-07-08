@@ -92,7 +92,8 @@ void	copy_traj_param(struct trajectory_state *src,\
 //------------------------------------------------------------------------------
 void	init_guidance_switches();
 int		get_guidance_state(int index);
-void	switch_guidance(int index);
+void	switch_guidance(int index, int active);
+void	set_traj_params(int index, float x, float y);
 
 //------------------------------------------------------------------------------
 //	THREAD CODE FUNCTIONS

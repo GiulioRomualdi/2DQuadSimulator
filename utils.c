@@ -37,6 +37,7 @@ pthread_mutex_t force_mutex[MAX_QUADROTORS];
 pthread_mutex_t desired_traj_mutex[MAX_QUADROTORS];
 pthread_mutex_t	guid_switches_mutex[MAX_QUADROTORS];
 pthread_mutex_t	selected_quad_mutex;
+pthread_mutex_t target_selection_mode_mutex;
 
 //------------------------------------------------------------------------------
 //	MATRIX HANDLING FUNCTION
@@ -473,6 +474,7 @@ int		i;
 			pthread_mutex_init(&(guidance_tp[i].mutex), NULL);
 		 }
             pthread_mutex_init(&selected_quad_mutex, NULL);
+			pthread_mutex_init(&target_selection_mode_mutex, NULL);
 			pthread_mutex_init(&(gui_tp[0].mutex), NULL);
 			pthread_mutex_init(&(user_tp[0].mutex), NULL);
 }
@@ -497,6 +499,7 @@ int		i;
 
 		 }
             pthread_mutex_destroy(&selected_quad_mutex);
+			pthread_mutex_destroy(&target_selection_mode_mutex);
 			pthread_mutex_destroy(&(gui_tp[0].mutex));
 			pthread_mutex_destroy(&(user_tp[0].mutex));
 }

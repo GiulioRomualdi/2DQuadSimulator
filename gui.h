@@ -58,6 +58,7 @@ struct	quad_coordinates {
 //	FUNCTIONS that modifies the variable 'selected_quadrotor'
 //------------------------------------------------------------------------------
 void	init_selected_quad();
+void	init_target_selection_mode();
 
 //------------------------------------------------------------------------------
 //	THREAD CODE

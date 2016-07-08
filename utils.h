@@ -33,25 +33,21 @@ typedef struct task_par task_par;
 //------------------------------------------------------------------------------
 extern task_par 		regulator_tp[MAX_QUADROTORS];
 extern pthread_t 		regulator_tid[MAX_QUADROTORS];
-extern pthread_attr_t 	regulator_attr[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 //	TASK GUIDANCE
 //------------------------------------------------------------------------------
 extern task_par 		guidance_tp[MAX_QUADROTORS];
 extern pthread_t		guidance_tid[MAX_QUADROTORS];
-extern pthread_attr_t	guidance_attr[MAX_QUADROTORS];
 //------------------------------------------------------------------------------
 //	TASK GUI
 //------------------------------------------------------------------------------
 extern task_par			gui_tp[1];
 extern pthread_t		gui_tid[1];
-extern pthread_attr_t	gui_attr[1];
 //------------------------------------------------------------------------------
 //	TASK USER
 //------------------------------------------------------------------------------
 extern task_par			user_tp[1];
 extern pthread_t		user_tid[1];
-extern pthread_attr_t	user_attr[1];
 //------------------------------------------------------------------------------
 //	MUTEX
 //------------------------------------------------------------------------------
@@ -62,6 +58,7 @@ extern pthread_mutex_t 	force_mutex[MAX_QUADROTORS];
 extern pthread_mutex_t 	desired_traj_mutex[MAX_QUADROTORS];
 extern pthread_mutex_t	guid_switches_mutex[MAX_QUADROTORS];
 extern pthread_mutex_t	selected_quad_mutex;
+extern pthread_mutex_t	target_selection_mode_mutex;
 
 //------------------------------------------------------------------------------
 //	FUNCTION PROTOTYPES

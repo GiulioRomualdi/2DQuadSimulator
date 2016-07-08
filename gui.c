@@ -164,7 +164,7 @@ BITMAP		*fly_bitmap, *plot_x_bitmap, *plot_y_bitmap, *plot_theta_bitmap,\
 plot_data	plot_x_est, plot_x_track, plot_y_est, plot_y_track, plot_theta_est,\
 		    plot_theta_track;
 FONT		*font_16, *font_12, *font_11, *font_10;
-int			selected_quad;
+int			selected_quad, target_selection_mode;
 
 //------------------------------------------------------------------------------
 //	FUNCTIONS that modifies the variable 'selected_quad'
@@ -217,6 +217,47 @@ void	next_selected_quad()
 		pthread_mutex_lock(&selected_quad_mutex);
 		selected_quad = modulo(selected_quad + 1, MAX_QUADROTORS);
 		pthread_mutex_unlock(&selected_quad_mutex);
+}
+
+//------------------------------------------------------------------------------
+//	FUNCTIONS that modifies the variable 'target_selection_mode'
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function init target_selection_mode
+//	initializes the variable target_selection_mode
+//------------------------------------------------------------------------------
+void	init_target_selection_mode()
+{
+		target_selection_mode = 0;
+}
+
+//------------------------------------------------------------------------------
+//	Function get_selected_quad
+//	returns the index of selected quadrotor
+//------------------------------------------------------------------------------
+static
+int		get_target_selection_mode()
+{
+int		value;
+
+		pthread_mutex_lock(&target_selection_mode_mutex);
+		value = target_selection_mode;
+		pthread_mutex_unlock(&target_selection_mode_mutex);
+
+		return value;
+}
+
+//------------------------------------------------------------------------------
+//	Function switch_target_selection_mode
+//	switches the target selection mode
+//------------------------------------------------------------------------------
+static
+void	switch_target_selection_mode()
+{
+		pthread_mutex_lock(&target_selection_mode_mutex);
+		target_selection_mode = (target_selection_mode + 1) % 2;
+		pthread_mutex_unlock(&target_selection_mode_mutex);
 }
 
 //------------------------------------------------------------------------------
@@ -519,6 +560,11 @@ struct force quad_force;
 		textprintf_right_ex(fly_bitmap, font_10, FLY_W, FLY_H - MARGIN,
 							legend_color, -1,
 							"%d", selected_quad + 1);
+
+		// Print the status of the target selection mode
+		if (get_target_selection_mode() == 1)
+			textout_ex(fly_bitmap, font_10, "*** TARGET SELECTION ***",\
+					   MARGIN, FLY_H - MARGIN, legend_color, -1);
 
 		// Transfer image from bitmap to screen
 		blit(fly_bitmap, screen, 0, 0, FLY_X, FLY_Y, FLY_W, FLY_H);
@@ -960,12 +1006,114 @@ task_par*	tp;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+//	Function check_mouse_coords
+//	checks whether the given scancode was pressed by the user
+//------------------------------------------------------------------------------
+static
+int		key_pressed(int scancode)
+{
+int		a;
+
+		if (keypressed()) {
+			a = readkey();
+			a = a >> 8;
+			if (a == scancode)
+				return 1;
+		}
+
+		return 0;
+}
+
+//------------------------------------------------------------------------------
+//	Function check_mouse_coords
+//	checks wheter the mouse coordinates are in the 
+//	interval [FLY_X, FLY_X + FLY_W] x [FLY_Y, FLY_Y + FLY_H]
+//------------------------------------------------------------------------------
+static
+int		check_mouse_coords(int x, int y)
+{
+int		check;
+
+		check = ((FLY_Y <= x) &&\
+				 (x <= FLY_X + FLY_W) &&\
+				 (FLY_Y <= y) &&\
+				 (y <= FLY_Y + FLY_H));
+
+		return check;
+}
+
+//------------------------------------------------------------------------------
+//	Function convert_mouse_coords
+//	converts the mouse coordinates in coordinates in the flying area (in meters)
+//------------------------------------------------------------------------------
+static
+void	convert_mouse_coords(float* x, float* y)
+{
+float	mouse_x, mouse_y;
+
+		mouse_x = *x;
+		mouse_y = *y;
+
+		// Remove the offset due to the flying area
+		mouse_x -= FLY_X;
+		mouse_y -= FLY_Y;
+
+		// Left upper corner conversion
+		mouse_y = FLY_H - mouse_y;
+
+		*x = mouse_x / FLY_SCALING;
+		*y = mouse_y / FLY_SCALING;
+}
+
+//------------------------------------------------------------------------------
+//	Function set_new_target
+//	set a new target for the guidance system
+//	using the user input
+//------------------------------------------------------------------------------
+static
+void	set_new_target()
+{
+float 	x, y;
+int 	selected_quad, old_guidance_state;
+
+		selected_quad = get_selected_quad();
+		old_guidance_state = get_guidance_state(selected_quad);
+
+		// Switch off the guidance system while the user chooses the new target
+		switch_guidance(selected_quad, 0);
+		switch_target_selection_mode();
+
+		while (1) {
+			if (mouse_b & 1) {
+				x = mouse_x;
+				y = mouse_y;
+
+				if (check_mouse_coords(x,y))
+				{
+					convert_mouse_coords(&x, &y);
+					set_traj_params(selected_quad, x, y);
+					switch_target_selection_mode();
+					return;
+				}
+			}
+
+			if (key_pressed(KEY_T)) {
+				switch_guidance(selected_quad, old_guidance_state);
+				switch_target_selection_mode();
+				return;
+			}
+		}
+}
+
+//------------------------------------------------------------------------------
 //	Function exec_user_command
 //	reads the key pressed by the user and perform the corresponding action
 //------------------------------------------------------------------------------
 static
 void	exec_user_command()
 {
+int		next_state, selected_quad;
+
 		readkey();
 		if(key[KEY_P]) {
 			previous_selected_quad();
@@ -975,11 +1123,16 @@ void	exec_user_command()
 			next_selected_quad();
 			plot_reset_all();
 		}
-		else if(key[KEY_G]) {
-			switch_guidance(get_selected_quad());
+		else if(key[KEY_G])
+		{
+			selected_quad = get_selected_quad();
+			next_state = (get_guidance_state(selected_quad) + 1) % 2;
+			switch_guidance(selected_quad, next_state);
 		}
 		else if(key[KEY_Q])
 			cancel_thread_all();
+		else if(key[KEY_T])
+			set_new_target();
 }
 
 //------------------------------------------------------------------------------
