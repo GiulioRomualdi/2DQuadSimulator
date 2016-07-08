@@ -33,6 +33,20 @@
 //	GUIDANCE SYSTEMS CONSTANTS
 //------------------------------------------------------------------------------
 #define	GUID_WAIT_TIME	2.0					// wait time for new target election
+//------------------------------------------------------------------------------
+//	DC MOTOR TRANSFER FUNCTION CONSTANT
+//------------------------------------------------------------------------------
+#define	DC_NUM_0_COEFF	-0.1067				// 0-th order numerator coeff. of dc motor transfer function
+#define	DC_NUM_1_COEFF	-0.0152				// 1-th order numerator coeff. of dc motor transfer function
+#define	DC_NUM_2_COEFF	0.2896				// 2-th order numerator coeff. of dc motor transfer function
+#define	DC_NUM_3_COEFF	0.1982				// 3-th order numerator coeff. of dc motor transfer function
+#define	DC_DEN_0_COEFF	0.3592				// 0-th order denominator coeff. of dc motor transfer function
+#define	DC_DEN_1_COEFF	-0.7851				// 1-th order denominator coeff. of dc motor transfer function
+#define	DC_DEN_2_COEFF	-0.2083				// 2-th order denominator coeff. of dc motor transfer function
+//------------------------------------------------------------------------------
+//	QUADROTOR PROPELLER CONSTANT
+//------------------------------------------------------------------------------
+#define SPEED_TO_THRUST (G * 1.22 / 6000)	// propeller thrust to speed ratio
 
 //------------------------------------------------------------------------------
 //	GLOABAL VARIABLE DEFINITIONS
@@ -52,6 +66,7 @@ struct state desired_trajectories[MAX_QUADROTORS];
 struct kalman_state kalman_states[MAX_QUADROTORS];
 struct trajectory_state traj_states[MAX_QUADROTORS];
 struct force forces[MAX_QUADROTORS];
+struct	dcmotor_state dc_motors[MAX_QUADROTORS][2];
 
 //------------------------------------------------------------------------------
 //	FUNCTIONS that modifies the variable 'guid_switch'
@@ -143,7 +158,8 @@ float 	tf;
 		traj_new_p.xf = x;
 		traj_new_p.yf = y;
 
-		tf = sqrt(pow(traj_new_p.xf - traj_new_p.x0, 2) + pow(traj_new_p.yf - traj_new_p.y0, 2));
+		tf = sqrt(pow(traj_new_p.xf - traj_new_p.x0, 2) +\
+				  pow(traj_new_p.yf - traj_new_p.y0, 2));
 		// Not too short
 		if (tf < 2)
 			tf = 2;
@@ -156,32 +172,6 @@ float 	tf;
 
 		// Update guidance parameters
 		copy_traj_param(&traj_new_p, &traj_states[i], &guidance_mutex[i]);
-}
-
-//------------------------------------------------------------------------------
-//	FUNCTIONS that modifies the variable with type 'state'
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-//	Function copy_state
-//------------------------------------------------------------------------------
-void 	copy_state(state *src, state *dst, pthread_mutex_t *mutex)
-{
-		pthread_mutex_lock(mutex);
-		*dst = *src;
-		pthread_mutex_unlock(mutex);
-}
-
-//------------------------------------------------------------------------------
-//	Function copy_forces
-//------------------------------------------------------------------------------
-static
-void 	copy_forces(float src[2], struct force *dst,  pthread_mutex_t *mutex)
-{
-		pthread_mutex_lock(mutex);
-		dst->force_left = src[0];
-		dst->force_right = src[1];
-		pthread_mutex_unlock(mutex);
 }
 
 //------------------------------------------------------------------------------
@@ -532,6 +522,117 @@ struct trajectory_state traj_p;
 }
 
 //------------------------------------------------------------------------------
+// 	DC MOTOR IO
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//	Function dcmotor_io_init
+//------------------------------------------------------------------------------
+void	dcmotor_io_init()
+{
+int 	i, j;
+
+		for (i = 0; i < MAX_QUADROTORS; i++) {
+
+			for (j = 0; j < DC_INPUT_BUF_SIZE; j++) {
+				dc_motors[i][0].in[j] = 0;
+				dc_motors[i][1].in[j] = 0;
+			}
+
+			for (j = 0; j < DC_OUTPUT_BUF_SIZE; j++) {
+				dc_motors[i][0].out[j] = 0;
+				dc_motors[i][1].out[j] = 0;
+			}
+		}
+}
+
+//------------------------------------------------------------------------------
+//	Function dcmotor_update_input
+//	updates the input buffer of the dc motors (left and right)
+//	for the i-th quadrotor
+//------------------------------------------------------------------------------
+static
+void	dcmotor_update_input(int i, float omega_left, float omega_right)
+{
+int		j;
+
+		for (j = DC_INPUT_BUF_SIZE -1; j > 0; j--) {
+			// left motor
+			dc_motors[i][0].in[j] = dc_motors[i][0].in[j-1];
+			// right motor
+			dc_motors[i][1].in[j] = dc_motors[i][1].in[j-1];
+		}
+		dc_motors[i][0].in[0] = omega_left;
+		dc_motors[i][1].in[0] = omega_right;
+}
+
+//------------------------------------------------------------------------------
+//	Function dcmotor_update_output
+//	updates the output buffer of the dc motors (left and right)
+//	for the i-th quadrotor
+//------------------------------------------------------------------------------
+static
+void	dcmotor_update_output(int i, float force_left, float force_right)
+{
+int		j;
+
+		for (j = DC_OUTPUT_BUF_SIZE -1; j > 0; j--) {
+			// left motor
+			dc_motors[i][0].out[j] = dc_motors[i][0].out[j-1];
+			// right motor
+			dc_motors[i][1].out[j] = dc_motors[i][1].out[j-1];
+		}
+		dc_motors[i][0].out[0] = force_left;
+		dc_motors[i][1].out[0] = force_right;
+}
+
+//------------------------------------------------------------------------------
+//	Function dcmotor_update_output
+//	evaluate the output of the dc motors (left and right)
+//------------------------------------------------------------------------------
+static
+void	dcmotor_eval_output(int i, float output[2])
+{
+float 	*in_left, *in_right, *out_left, *out_right;
+
+		in_left = dc_motors[i][0].in;
+		in_right = dc_motors[i][1].in;
+		out_left = dc_motors[i][0].out;
+		out_right = dc_motors[i][1].out;
+
+		//left motor
+		output[0] = SPEED_TO_THRUST * (DC_NUM_3_COEFF * in_left[0] + \
+									   DC_NUM_2_COEFF * in_left[1] + \
+									   DC_NUM_1_COEFF * in_left[2] + \
+									   DC_NUM_0_COEFF * in_left[3]) -\
+					(DC_DEN_2_COEFF * out_left[0] + \
+					 DC_DEN_1_COEFF * out_left[1] + \
+					 DC_DEN_0_COEFF * out_left[2]);
+
+		//right motor
+		output[1] = SPEED_TO_THRUST * (DC_NUM_3_COEFF * in_right[0] + \
+									   DC_NUM_2_COEFF * in_right[1] + \
+									   DC_NUM_1_COEFF * in_right[2] + \
+									   DC_NUM_0_COEFF * in_right[3]) -\
+					(DC_DEN_2_COEFF * out_right[0] + \
+					 DC_DEN_1_COEFF * out_right[1] + \
+					 DC_DEN_0_COEFF * out_right[2]);
+}
+
+//------------------------------------------------------------------------------
+//	Function dcmotor_io
+//	evaluates the input/output behavior of the dc motors
+//	puts the evaluated output in 'real'
+//------------------------------------------------------------------------------
+static
+void 	dcmotor_io(int index, float input[2], float output[2])
+{
+		dcmotor_update_input(index, input[0], input[1]);
+		dcmotor_eval_output(index, output);
+		dcmotor_update_output(index, output[0], output[1]);
+}
+
+//------------------------------------------------------------------------------
 // 	SYSTEM DYNAMICS, SYSTEM IO, SYSTEM FEEDBACK FUNCTIONS
 //------------------------------------------------------------------------------
 
@@ -547,6 +648,28 @@ void 	init_state(int i, float x, float vx, float y,\
 		states[i].vy = vy;
 		states[i].theta = theta;
 		states[i].vtheta = vtheta;
+}
+
+//------------------------------------------------------------------------------
+//	Function copy_state
+//------------------------------------------------------------------------------
+void 	copy_state(state *src, state *dst, pthread_mutex_t *mutex)
+{
+		pthread_mutex_lock(mutex);
+		*dst = *src;
+		pthread_mutex_unlock(mutex);
+}
+
+//------------------------------------------------------------------------------
+//	Function copy_forces
+//------------------------------------------------------------------------------
+static
+void 	copy_forces(float src[2], struct force *dst,  pthread_mutex_t *mutex)
+{
+		pthread_mutex_lock(mutex);
+		dst->force_left = src[0];
+		dst->force_right = src[1];
+		pthread_mutex_unlock(mutex);
 }
 
 //------------------------------------------------------------------------------
@@ -620,12 +743,16 @@ float	du[2][1];
 		error[4][0] = current_state.theta - desired_trajectory.theta;
 		error[5][0] = current_state.vtheta - desired_trajectory.vtheta;
 
-		// Evaluate the the control output wrt the nominal control
+		// Evaluate the control output wrt the nominal control
 		// du = K_LQ * error
 		mat_mul(2, 6, K_LQ, 6, 1, error, du);
 		// Add the nominal control
 		output[0] = du[0][0] + nominal_fl;
 		output[1] = du[1][0] + nominal_fr;
+		// Scale in order to obtain an angular velocity reference input
+		// to the dc motors
+		output[0] /= SPEED_TO_THRUST;
+		output[1] /= SPEED_TO_THRUST;
 }
 
 //------------------------------------------------------------------------------
@@ -896,7 +1023,7 @@ float	x0, y0;
 void*	regulator_task(void* arg)
 {
 struct task_par* tp;
-float	measure[3], real_input[2], reference_input[2];
+float	measure[3], dc_input[2], reference_input[2], real_input[2];
 float	period;
 state	reference_trajectory, estimate, state;
 
@@ -917,9 +1044,12 @@ state	reference_trajectory, estimate, state;
 			get_reference_state(tp->id, period, &reference_trajectory, reference_input);
 			update_trajectory_time(tp->id, period);
 
-			// Evaluate the real input to the system
+			// Evaluate the angular velocity reference input for the dc motors
 			feedback_control(kalman_states[tp->id].estimate, reference_trajectory,\
-							 reference_input[0], reference_input[1], real_input);
+							 reference_input[0], reference_input[1], dc_input);
+
+			// Evaluate the dynamics of the quadrotor motors
+			dcmotor_io(tp->id, dc_input, real_input);
 
 			// Evaluate the output of the system
 			system_io(tp->id, period, real_input[0], real_input[1], &state, measure);
@@ -937,7 +1067,6 @@ state	reference_trajectory, estimate, state;
 			thread_loop_end(tp);
 		}
 }
-
 
 //------------------------------------------------------------------------------
 //  GUIDANCE TASK

@@ -23,6 +23,11 @@
 #define GUIDANCE_DEADLINE	1000.0			// guidance task relative deadline in ms
 #define REGULATOR_PERIOD	10.0			// regulator task period in ms
 #define REGULATOR_DEADLINE	10.0			// regulator task relative deadline in ms
+//------------------------------------------------------------------------------
+//	DC MOTOR CONSTANTS
+//------------------------------------------------------------------------------
+#define DC_INPUT_BUF_SIZE	4				// dc motor input buffer size
+#define DC_OUTPUT_BUF_SIZE	3				// dc motor output buffer size
 
 //------------------------------------------------------------------------------
 //	DATA STRUCTURES DECLARATIONS
@@ -59,6 +64,11 @@ struct	trajectory_state {
 struct	force {
 		float			force_left;		// left force in N
 		float			force_right;	// right force in N
+};
+
+struct	dcmotor_state {
+		float			in[DC_INPUT_BUF_SIZE];		// input buffer of the system
+		float			out[DC_OUTPUT_BUF_SIZE];	// output buffer of the system
 };
 
 //------------------------------------------------------------------------------
@@ -99,6 +109,7 @@ void	set_traj_params(int index, float x, float y);
 //	THREAD CODE FUNCTIONS
 //------------------------------------------------------------------------------
 void	set_initial_conditions();
+void	dcmotor_io_init();
 void*	regulator_task(void* arg);
 void*	guidance_task(void* arg);
 

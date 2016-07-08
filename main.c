@@ -29,6 +29,7 @@ int	  	error;
 		init_guidance_switches();
 		init_random_generator();
 		mutex_init();
+		dcmotor_io_init();
 		set_initial_conditions();
 
 		// threads
