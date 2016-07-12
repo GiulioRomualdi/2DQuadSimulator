@@ -19,7 +19,7 @@ struct	task_par {								// task parameters
 		struct	timespec	abs_deadline;		// absolute
 		struct	timespec 	start_time;			// task current start time
 		struct	timespec	finish_time;		// task current finish time
-		struct	timespec	wcet;				// worst case execution time
+		struct	timespec	response_t;				// worst case execution time
 		pthread_mutex_t		mutex;				// mutex
 };
 typedef struct task_par task_par;
@@ -95,14 +95,14 @@ int		modulo(int a, int b);
 //-----------------------------------------------------------------------------
 //	TIMESPEC FUNCTIONS
 //-----------------------------------------------------------------------------
-float	time_to_ms(struct timespec* time);
+double	time_to_ms(struct timespec* time);
 
 //-----------------------------------------------------------------------------
 //	THREAD MANAGEMENT FUNCTIONS
 //-----------------------------------------------------------------------------
 void	init_timespecs(task_par* tp);
 void	set_start_time(task_par* tp);
-void	zero_wcet(task_par* tp);
+void	zero_response_t(task_par* tp);
 void	mutex_init();
 void	mutex_destroy();
 void	aperiodic_wait(struct task_par* tp);

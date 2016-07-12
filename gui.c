@@ -853,7 +853,7 @@ static
 void   	print_performace_label(BITMAP* bitmap, int x, int y, task_par* tp)
 {
 int 	height, text_color, deadline_miss;
-float	wcet;
+double	response_t;
 
 		// Set color
 		text_color = makecol(TEXT_COL_R, TEXT_COL_G, TEXT_COL_B);
@@ -863,16 +863,16 @@ float	wcet;
 
 		pthread_mutex_lock(&(tp->mutex));
 		deadline_miss = tp->dmiss;
-		wcet = time_to_ms(&(tp->wcet));
+		response_t = time_to_ms(&(tp->response_t));
 		pthread_mutex_unlock(&(tp->mutex));
 
 		textprintf_ex(bitmap, font_11, x, y, text_color, -1, "%s", tp->task_name);
 		textprintf_ex(bitmap, font_10, x, y + height, text_color, -1,\
 					  "period: %d ms", tp->period);
 		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1,\
-					  "wcet: %.4f", wcet);
+					  "max R: %.4f", response_t);
 		textprintf_ex(bitmap, font_10, x, y + 2 * height, text_color, -1,\
-					  "%16s", "ms");
+					  "%17s", "ms");
 		textprintf_ex(bitmap, font_10, x, y + 3 * height, text_color, -1,\
 					  "deadline miss: %d", deadline_miss);
 }
@@ -982,10 +982,10 @@ void*		gui_task(void* arg)
 {
 task_par*	tp;
 
+			gui_init();
+
 			tp = (struct task_par*)arg;
 			init_timespecs(tp);
-
-			gui_init();
 
 			while(1) {
 

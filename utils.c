@@ -366,9 +366,9 @@ int		r;
 //	Function time_to_ms
 //	returns the time represented by the timespec time in milliseconds
 //------------------------------------------------------------------------------
-float	time_to_ms(struct timespec *time)
+double	time_to_ms(struct timespec *time)
 {
-		return time->tv_sec * 1000 + (float)time->tv_nsec / 1000000;
+		return time->tv_sec * 1000 + (double)time->tv_nsec / 1000000;
 }
 
 //------------------------------------------------------------------------------
@@ -405,7 +405,7 @@ void	time_add_delta(struct timespec* time, int delta)
 		time->tv_sec += delta / 1000;
 		time->tv_nsec += (delta % 1000) * 1000000;
 
-		if (time->tv_nsec > 1000000000) {
+		if (time->tv_nsec >= 1000000000) {
 			time->tv_nsec -= 1000000000;
 			time->tv_sec += 1;
 		}
@@ -517,7 +517,6 @@ struct timespec time;
 		clock_gettime(CLOCK_MONOTONIC, &time);
 		time_copy(time, &(tp->activation_time));
 		time_copy(time, &(tp->abs_deadline));
-		time_add_delta(&(tp->activation_time), tp->period);
 		time_add_delta(&(tp->abs_deadline), tp->deadline);
 }
 
@@ -597,29 +596,29 @@ struct timespec time;
 }
 
 //-----------------------------------------------------------------------------
-//	Function zero_wcet
-//	set the wcet to zero
+//	Function zero_response_t
+//	set the response time to zero
 //-----------------------------------------------------------------------------
-void	zero_wcet(struct task_par* tp)
+void	zero_response_t(struct task_par* tp)
 {
-		time_zero(&(tp->wcet));
+		time_zero(&(tp->response_t));
 }
 
 //-----------------------------------------------------------------------------
-//	Function update_wcet
-//	update the worst case execution time of the task
+//	Function update_response_t
+//	update the response time of the task
 //-----------------------------------------------------------------------------
 static
-void	update_wcet(struct task_par* tp)
+void	update_response_t(struct task_par* tp)
 {
 struct timespec diff;
 
-		diff = time_diff(&(tp->finish_time), &(tp->start_time));
+		diff = time_diff(&(tp->finish_time), &(tp->activation_time));
 
 		pthread_mutex_lock(&(tp->mutex));
 
-		if (time_cmp(&diff, &(tp->wcet))== 1)
-			time_copy(diff, &(tp->wcet));
+		if (time_cmp(&diff, &(tp->response_t))== 1)
+			time_copy(diff, &(tp->response_t));
 
 		pthread_mutex_unlock(&(tp->mutex));
 }
@@ -644,11 +643,11 @@ struct timespec	time;
 void	thread_loop_end(struct task_par* tp)
 {
 		set_finish_time(tp);
-		update_wcet(tp);
+		update_response_t(tp);
 		deadline_miss(tp);
-		wait_for_period(tp);
 		update_activation_time(tp);
 		update_abs_deadline(tp);
+		wait_for_period(tp);
 }
 
 //------------------------------------------------------------------------------
@@ -669,7 +668,7 @@ int 	error;
 			tp[i].deadline = deadline;
 			tp[i].dmiss = 0;
 			strcpy(tp[i].task_name, task_name);
-			zero_wcet(&(tp[i]));
+			zero_response_t(&(tp[i]));
 
 			error = pthread_create(&tid[i], NULL, task_body, &tp[i]);
 			if (error != 0) {

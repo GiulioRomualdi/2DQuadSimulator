@@ -1030,9 +1030,9 @@ state	reference_trajectory, estimate, state;
 		tp = (struct task_par*)arg;
 		period = ((float)tp->period) / 1000;
 
-		init_timespecs(tp);
-
 		init_ekf_matrix(tp->id, period);
+
+		init_timespecs(tp);
 
 		while(1) {
 			set_start_time(tp);
